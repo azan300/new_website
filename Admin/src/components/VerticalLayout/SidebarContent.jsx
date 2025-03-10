@@ -154,8 +154,8 @@ const SidebarContent = (props) => {
       <SimpleBar className="h-100" ref={ref}>
         <div id="sidebar-menu">
           <ul className="metismenu list-unstyled" id="side-menu">
-            <li className="menu-title">{props.t("Menu")} </li>
-            <li>
+           {/* <li className="menu-title">{props.t("Menu")} </li>*/}
+            {/* <li>
               <Link to="/#" className="has-arrow">
                 <i className="bx bx-home-circle"></i>
                 <span>{props.t("Dashboards")}</span>
@@ -166,14 +166,14 @@ const SidebarContent = (props) => {
                 </li>
                 <li>
                   <Link to="/dashboard-saas">{props.t("Saas")}</Link>
-                </li>
+                </li> 
                 <li>
                   <Link to="/dashboard-job">
                     {props.t("Job")}
                   </Link>
                 </li>
               </ul>
-            </li>
+            </li> */}
 
             <li className="menu-title">{props.t("Apps")}</li>
 
@@ -382,7 +382,7 @@ const SidebarContent = (props) => {
               </ul>
             </li>
 
-            <li className="menu-title">Pages</li>
+           {/* <li className="menu-title">Pages</li>
             <li>
               <Link to="/#" className="has-arrow ">
                 <i className="bx bx-user-circle"></i>
@@ -480,9 +480,9 @@ const SidebarContent = (props) => {
                   <Link to="/pages-500">{props.t("Error 500")}</Link>
                 </li>
               </ul>
-            </li>
+            </li> */}
 
-            <li className="menu-title">{props.t("Components")}</li>
+           {/* <li className="menu-title">{props.t("Components")}</li>
 
             <li>
               <Link to="/#" className="has-arrow ">
@@ -619,16 +619,16 @@ const SidebarContent = (props) => {
                 <li>
                   <Link to="/tables-datatable">{props.t("Data Tables")}</Link>
                 </li>
-                {/* <li>
+                 <li>
                   <Link to="/tables-responsive">
                     {props.t("Responsive Table")}
                   </Link>
-                </li> */}
-                {/* <li>
+                </li> 
+                 <li>
                   <Link to="/tables-dragndrop">
                     {props.t("Drag & Drop Table")}
                   </Link>
-                </li> */}
+                </li> 
               </ul>
             </li>
 
@@ -696,9 +696,9 @@ const SidebarContent = (props) => {
                   <Link to="/maps-google">{props.t("Google Maps")}</Link>
                 </li>
               </ul>
-            </li>
+            </li> */}
 
-            <li>
+           <li>
               <Link to="/#" className="has-arrow ">
                 <i className="bx bx-share-alt"></i>
                 <span>{props.t("Multi Level")}</span>
@@ -727,7 +727,7 @@ const SidebarContent = (props) => {
       </SimpleBar>
     </React.Fragment>
   );
-};
+}; 
 
 SidebarContent.propTypes = {
   location: PropTypes.object,
