@@ -216,6 +216,16 @@ const authProtectedRoutes = [
   { path: "/projects-overview/:id", component: <ProjectsOverview /> },
   { path: "/projects-create", component: <ProjectsCreate /> },
 
+  //  // Job
+  // Job Pages
+  { path: "/job-grid", component: <JobGrid /> },
+  { path: "/job-details", component: <JobDetails /> },
+  { path: "/job-categories", component: <JobCategories /> },
+  { path: "/job-list", component: <JobList /> },
+  { path: "/job-apply", component: <ApplyJobs /> },
+  { path: "/candidate-list", component: <CandidateList /> },
+  { path: "/candidate-overview", component: <CandidateOverview /> },
+
 
   // Contacts
   { path: "/contacts-grid", component: <ContactsGrid /> },
@@ -288,7 +298,7 @@ const authProtectedRoutes = [
 
   //   // this route should be at the end of all other routes
   //   // eslint-disable-next-line react/display-name
-  { path: "/", exact: true, component: <Navigate to="/dashboard" /> },
+  { path: "/", exact: true, component: <Navigate to="/login" /> },
 ];
 
 const publicRoutes = [

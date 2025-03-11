@@ -343,44 +343,43 @@ const SidebarContent = (props) => {
                   <Link to="/contacts-profile">{props.t("Profile")}</Link>
                 </li>
               </ul>
-            </li>
-            <li>
-              <Link to="/#">
+          <li>
+  <Link to="/#" className="has-arrow">
+    <i className="bx bx-briefcase-alt"></i>
+    <span key="t-jobs">{props.t("Jobs")}</span>
+  </Link>
+  <ul className="sub-menu" aria-expanded="false">
+    <li>
+      <Link to="/job-list">{props.t("Job List")}</Link>
+    </li>
+    <li>
+      <Link to="/job-grid">{props.t("Job Grid")}</Link>
+    </li>
+    <li>
+      <Link to="/job-apply">{props.t("Apply Job")}</Link>
+    </li>
+    <li>
+      <Link to="/job-details">{props.t("Job Details")}</Link>
+    </li>
+    <li>
+      <Link to="/job-categories">{props.t("Jobs Categories")}</Link>
+    </li>
+    <li>
+      <Link to="/#" className="has-arrow">
+        Candidate
+      </Link>
+      <ul className="sub-menu" aria-expanded="false">
+        <li>
+          <Link to="/candidate-list">{props.t("List")}</Link>
+        </li>
+        <li>
+          <Link to="/candidate-overview">{props.t("Overview")}</Link>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</li>
 
-                <i className="bx bx-briefcase-alt"></i>
-                <span key="t-jobs">{props.t("Jobs")}</span>
-              </Link>
-              <ul className="sub-menu">
-                <li>
-                  <Link to="/job-list">{props.t("Job List")}</Link>
-                </li>
-                <li>
-                  <Link to="/job-grid">{props.t("Job Grid")}</Link>
-                </li>
-                <li>
-                  <Link to="/job-apply">{props.t("Apply Job")}</Link>
-                </li>
-                <li>
-                  <Link to="/job-details">{props.t("Job Details")}</Link>
-                </li>
-                <li>
-                  <Link to="/job-categories">{props.t("Jobs Categories")}</Link>
-                </li>
-                <li>
-                  <Link to="/#" className="has-arrow">
-                    Candidate
-                  </Link>
-                  <ul className="sub-menu" aria-expanded="true">
-                    <li>
-                      <Link to="/candidate-list">{props.t("List")}</Link>
-                    </li>
-                    <li>
-                      <Link to="/candidate-overview">{props.t("Overview")}</Link>
-                    </li>
-                  </ul>
-                </li>
-              </ul>
-            </li>
 
            {/* <li className="menu-title">Pages</li>
             <li>
@@ -721,9 +720,9 @@ const SidebarContent = (props) => {
                   </ul>
                 </li>
               </ul>
-            </li> */}
-          </ul>
-        </div>
+            </li> */}</li>
+          </ul> 
+        </div> 
       </SimpleBar>
     </React.Fragment>
   );
