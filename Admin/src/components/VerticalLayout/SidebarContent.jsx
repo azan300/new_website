@@ -206,17 +206,17 @@ const SidebarContent = (props) => {
                 <li>
                   <Link to="/ecommerce-products">{props.t("Products")}</Link>
                 </li>
-                <li>
+                {/*<li>
                   <Link to="/ecommerce-product-detail/1">
                     {props.t("Product Detail")}
                   </Link>
                 </li>
                 <li>
                   <Link to="/ecommerce-orders">{props.t("Orders")}</Link>
-                </li>
+                </li> */}
                 <li>
                   <Link to="/ecommerce-customers">{props.t("Customers")}</Link>
-                </li>
+                </li> {/*
                 <li>
                   <Link to="/ecommerce-cart">{props.t("Cart")}</Link>
                 </li>
@@ -225,7 +225,7 @@ const SidebarContent = (props) => {
                 </li>
                 <li>
                   <Link to="/ecommerce-shops">{props.t("Shops")}</Link>
-                </li>
+                </li> */}
                 <li>
                   <Link to="/ecommerce-add-product">
                     {props.t("Add Product")}
@@ -698,7 +698,7 @@ const SidebarContent = (props) => {
               </ul>
             </li> */}
 
-           <li>
+          {/* <li>
               <Link to="/#" className="has-arrow ">
                 <i className="bx bx-share-alt"></i>
                 <span>{props.t("Multi Level")}</span>
@@ -721,7 +721,7 @@ const SidebarContent = (props) => {
                   </ul>
                 </li>
               </ul>
-            </li>
+            </li> */}
           </ul>
         </div>
       </SimpleBar>
