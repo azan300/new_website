@@ -3,7 +3,10 @@ import PropTypes from "prop-types";
 import { Link } from "react-router-dom";
 import withRouter from "../../components/Common/withRouter";
 
-//redux
+// Google Authentication
+import { signInWithGoogle } from "../../Firebase/firebaseConfig";
+
+// Redux
 import { useSelector, useDispatch } from "react-redux";
 import { createSelector } from "reselect";
 
@@ -24,30 +27,29 @@ import {
   Label,
 } from "reactstrap";
 
-// actions
-import { loginUser, socialLogin } from "/src/store/actions";
+// Actions
+import { loginUser } from "/src/store/actions";
 
-// import images
+// Import images
 import profile from "../../assets/images/profile-img.png";
 import logo from "../../assets/images/logo.svg";
 import lightlogo from "../../assets/images/logo-light.svg";
 
 const Login = (props) => {
-  //meta title
+  // Meta title
   document.title = "Login - Vite React Admin & Dashboard Template";
   const dispatch = useDispatch();
 
   const validation = useFormik({
-    // enableReinitialize : use this flag when initial values needs to be changed
     enableReinitialize: true,
 
     initialValues: {
-      email: "admin@themesbrand.com" || "",
-      password: "123456" || "",
+      email: "",
+      password: "",
     },
     validationSchema: Yup.object({
-      email: Yup.string().required("Please Enter Your Email"),
-      password: Yup.string().required("Please Enter Your Password"),
+      email: Yup.string().email("Invalid email").required("Please enter your email"),
+      password: Yup.string().required("Please enter your password"),
     }),
     onSubmit: (values) => {
       dispatch(loginUser(values, props.router.navigate));
@@ -61,17 +63,22 @@ const Login = (props) => {
     })
   );
 
-  const {
-    error
-  } = useSelector(LoginProperties);
+  const { error } = useSelector(LoginProperties);
 
-  const signIn = type => {
-    dispatch(socialLogin(type, props.router.navigate));
-  };
+  // Function to handle Google Login
+  const handleGoogleLogin = async () => {
+    try {
+      const user = await signInWithGoogle();
+      console.log("User Signed In:", user);
 
-  //for facebook and google authentication
-  const socialResponse = type => {
-    signIn(type);
+      // Store user info (can be Redux or LocalStorage)
+      localStorage.setItem("authUser", JSON.stringify(user));
+
+      // Redirect user to dashboard
+      props.router.navigate("/dashboard");
+    } catch (error) {
+      console.error("Google Sign-In Error:", error);
+    }
   };
 
   return (
@@ -90,7 +97,7 @@ const Login = (props) => {
                   <Row>
                     <Col xs={7}>
                       <div className="text-primary p-4">
-                        <h5 className="text-primary">Welcome Back !</h5>
+                        <h5 className="text-primary">Welcome Back!</h5>
                         <p>Sign in to continue.</p>
                       </div>
                     </Col>
@@ -104,24 +111,14 @@ const Login = (props) => {
                     <Link to="/" className="auth-logo-light">
                       <div className="avatar-md profile-user-wid mb-4">
                         <span className="avatar-title rounded-circle bg-light">
-                          <img
-                            src={lightlogo}
-                            alt=""
-                            className="rounded-circle"
-                            height="34"
-                          />
+                          <img src={lightlogo} alt="" className="rounded-circle" height="34" />
                         </span>
                       </div>
                     </Link>
                     <Link to="/" className="auth-logo-dark">
                       <div className="avatar-md profile-user-wid mb-4">
                         <span className="avatar-title rounded-circle bg-light">
-                          <img
-                            src={logo}
-                            alt=""
-                            className="rounded-circle"
-                            height="34"
-                          />
+                          <img src={logo} alt="" className="rounded-circle" height="34" />
                         </span>
                       </div>
                     </Link>
@@ -147,16 +144,10 @@ const Login = (props) => {
                           onChange={validation.handleChange}
                           onBlur={validation.handleBlur}
                           value={validation.values.email || ""}
-                          invalid={
-                            validation.touched.email && validation.errors.email
-                              ? true
-                              : false
-                          }
+                          invalid={validation.touched.email && validation.errors.email ? true : false}
                         />
                         {validation.touched.email && validation.errors.email ? (
-                          <FormFeedback type="invalid">
-                            {validation.errors.email}
-                          </FormFeedback>
+                          <FormFeedback type="invalid">{validation.errors.email}</FormFeedback>
                         ) : null}
                       </div>
 
@@ -170,40 +161,22 @@ const Login = (props) => {
                           placeholder="Enter Password"
                           onChange={validation.handleChange}
                           onBlur={validation.handleBlur}
-                          invalid={
-                            validation.touched.password &&
-                              validation.errors.password
-                              ? true
-                              : false
-                          }
+                          invalid={validation.touched.password && validation.errors.password ? true : false}
                         />
-                        {validation.touched.password &&
-                          validation.errors.password ? (
-                          <FormFeedback type="invalid">
-                            {validation.errors.password}
-                          </FormFeedback>
+                        {validation.touched.password && validation.errors.password ? (
+                          <FormFeedback type="invalid">{validation.errors.password}</FormFeedback>
                         ) : null}
                       </div>
 
                       <div className="form-check">
-                        <input
-                          type="checkbox"
-                          className="form-check-input"
-                          id="customControlInline"
-                        />
-                        <label
-                          className="form-check-label"
-                          htmlFor="customControlInline"
-                        >
+                        <input type="checkbox" className="form-check-input" id="customControlInline" />
+                        <label className="form-check-label" htmlFor="customControlInline">
                           Remember me
                         </label>
                       </div>
 
                       <div className="mt-3 d-grid">
-                        <button
-                          className="btn btn-primary btn-block"
-                          type="submit"
-                        >
+                        <button className="btn btn-primary btn-block" type="submit">
                           Log In
                         </button>
                       </div>
@@ -213,57 +186,29 @@ const Login = (props) => {
 
                         <ul className="list-inline">
                           <li className="list-inline-item">
-                            <Link
-                              to="#"
-                              className="social-list-item bg-primary text-white border-primary"
-                              onClick={e => {
-                                e.preventDefault();
-                                socialResponse("facebook");
+                            <button
+                              className="btn btn-danger"
+                              onClick={handleGoogleLogin}
+                              style={{
+                                padding: "10px 20px",
+                                borderRadius: "5px",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                width: "auto",
+                                margin: "10px auto",
                               }}
                             >
-                              <i className="mdi mdi-facebook" />
-                            </Link>
-                          </li>
-                          {/*<li className="list-inline-item">*/}
-                          {/*  <TwitterLogin*/}
-                          {/*    loginUrl={*/}
-                          {/*      "http://localhost:4000/api/v1/auth/twitter"*/}
-                          {/*    }*/}
-                          {/*    onSuccess={this.twitterResponse}*/}
-                          {/*    onFailure={this.onFailure}*/}
-                          {/*    requestTokenUrl={*/}
-                          {/*      "http://localhost:4000/api/v1/auth/twitter/revers"*/}
-                          {/*    }*/}
-                          {/*    showIcon={false}*/}
-                          {/*    tag={"div"}*/}
-                          {/*  >*/}
-                          {/*    <a*/}
-                          {/*      href=""*/}
-                          {/*      className="social-list-item bg-info text-white border-info"*/}
-                          {/*    >*/}
-                          {/*      <i className="mdi mdi-twitter"/>*/}
-                          {/*    </a>*/}
-                          {/*  </TwitterLogin>*/}
-                          {/*</li>*/}
-                          <li className="list-inline-item">
-                            <Link
-                              to="#"
-                              className="social-list-item bg-danger text-white border-danger"
-                              onClick={e => {
-                                e.preventDefault();
-                                socialResponse("google");
-                              }}
-                            >
-                              <i className="mdi mdi-google" />
-                            </Link>
+                              <i className="mdi mdi-google" style={{ marginRight: "8px" }}></i>
+                              Sign in with Google
+                            </button>
                           </li>
                         </ul>
                       </div>
 
                       <div className="mt-4 text-center">
                         <Link to="/forgot-password" className="text-muted">
-                          <i className="mdi mdi-lock me-1" />
-                          Forgot your password?
+                          <i className="mdi mdi-lock me-1" /> Forgot your password?
                         </Link>
                       </div>
                     </Form>
@@ -272,15 +217,13 @@ const Login = (props) => {
               </Card>
               <div className="mt-5 text-center">
                 <p>
-                  Don&#39;t have an account ?{" "}
+                  Don&#39;t have an account?{" "}
                   <Link to="/register" className="fw-medium text-primary">
-                    {" "}
-                    Signup now{" "}
+                    Signup now
                   </Link>{" "}
                 </p>
                 <p>
-                   Crafted with{" "}
-                  <i className="mdi mdi-heart text-danger" /> by Roofing Senior Design UNT Team
+                  Crafted with <i className="mdi mdi-heart text-danger" /> by Roofing Senior Design UNT Team
                 </p>
               </div>
             </Col>
