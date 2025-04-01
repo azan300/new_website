@@ -20,6 +20,9 @@ import {
 import * as Yup from "yup";
 import { useFormik } from "formik";
 
+const CLIENT_ID = "602714767093-hulo8d18n3t9i9qa9fal0d4afl74iods.apps.googleusercontent.com";
+const SCOPES = "https://www.googleapis.com/auth/calendar";
+
 //Import Breadcrumb
 import Breadcrumbs from "/src/components/Common/Breadcrumb";
 
@@ -132,6 +135,42 @@ const Calender = (props) => {
       }, 500);
     }
   }, [modalCategory, event]);
+
+  const handleGoogleSync = () => {
+    if (!window.google || !window.google.accounts || !window.google.accounts.oauth2) {
+      console.error("Google Identity Services SDK not loaded.");
+      return;
+    }
+  
+    const tokenClient = window.google.accounts.oauth2.initCodeClient({
+      client_id: CLIENT_ID,
+      scope: SCOPES,
+      callback: (response) => {
+        if (response.code) {
+          // Send code to your backend for token exchange
+          fetch("/api/store-refresh-token", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ code: response.code }),
+          })
+          .then(res => res.json())
+          .then(data => {
+            console.log("Refresh token exchange success:", data);
+            alert("Google Calendar sync is now enabled.");
+          })
+          .catch(err => {
+            console.error("Token exchange failed", err);
+          });
+        }
+      },
+    });
+  
+    tokenClient.requestCode();
+  };
+  
+
 
   /**
    * Handling the modal state
@@ -344,6 +383,11 @@ const Calender = (props) => {
                   {/* fullcalendar control */}
                   <Card>
                     <CardBody>
+
+                    < Button color="secondary" className="mb-3" onClick={handleGoogleSync}>
+                          Sync with Google Calendar
+                        </Button>
+                        
                       <FullCalendar
                         plugins={[
                           BootstrapTheme,
@@ -369,6 +413,7 @@ const Calender = (props) => {
                         eventClick={handleEventClick}
                         drop={onDrop}
                       />
+                      
                     </CardBody>
                   </Card>
                   <Modal

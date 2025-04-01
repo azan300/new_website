@@ -75,7 +75,7 @@ const App = (props) => {
         {publicRoutes.map((route, idx) => (
           <Route
             path={route.path}
-            element={<NonAuthLayout>{route.component}</NonAuthLayout>}
+            element={<NonAuthLayout>{route.element}</NonAuthLayout>}
             key={idx}
             exact={true}
           />
@@ -86,7 +86,7 @@ const App = (props) => {
             path={route.path}
             element={
               <Authmiddleware>
-                <Layout>{route.component}</Layout>
+                <Layout>{route.element}</Layout>
               </Authmiddleware>
             }
             key={idx}
