@@ -53,13 +53,15 @@ import allLocales from '@fullcalendar/core/locales-all';
 
 const Calender = (props) => {
   //meta title
-  document.title = "Full Calendar | Skote - Vite React Admin & Dashboard Template";
+  document.title = "Full Calendar | Vite React Admin & Dashboard";
 
   const dispatch = useDispatch();
 
   const [event, setEvent] = useState({});
   const [isEdit, setIsEdit] = useState(false);
 
+  const [accessToken, setAccessToken] = useState(null);
+  
   const categoryValidation = useFormik({
     // enableReinitialize : use this flag when initial values needs to be changed
     enableReinitialize: true,
@@ -73,7 +75,7 @@ const Calender = (props) => {
       category: Yup.string().required("Please Enter Your Billing Name"),
     }),
     onSubmit: (values) => {
-      if (isEdit) {
+      if (isEdit) { 
         const updateEvent = {
           id: event.id,
           title: values.title,
@@ -96,6 +98,32 @@ const Calender = (props) => {
         // save new event
         dispatch(onAddNewEvent(newEvent));
         categoryValidation.resetForm()
+
+        if (accessToken) {
+          const calendarEvent = {
+            title: newEvent.title,
+            start: newEvent.start.toISOString(),
+            end: new Date(newEvent.start.getTime() + 60 * 60 * 1000).toISOString(), // 1hr event
+          };
+      
+          fetch("/api/create-google-event", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              access_token: accessToken,
+              event: calendarEvent,
+            }),
+          })
+            .then(res => res.json())
+            .then(data => {
+              console.log("Google Calendar event created:", data);
+            })
+            .catch(err => {
+              console.error("Failed to create Google Calendar event:", err);
+            });
+        }
       }
       toggle();
     },
@@ -158,6 +186,7 @@ const Calender = (props) => {
           .then(res => res.json())
           .then(data => {
             console.log("Refresh token exchange success:", data);
+            setAccessToken(data.tokens.access_token);
             alert("Google Calendar sync is now enabled.");
           })
           .catch(err => {

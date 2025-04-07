@@ -26,49 +26,52 @@ import withRouter from "../../components/Common/withRouter";
 //Import Breadcrumb
 import Breadcrumb from "../../components/Common/Breadcrumb";
 
-import avatar from "../../assets/images/users/avatar-1.jpg";
+import defaultAvatar from "../../assets/images/users/avatar-1.jpg";
 // actions
 import { editProfile, resetProfileFlag } from "/src/store/actions";
 
 const UserProfile = (props) => {
-
-  //meta title
-  document.title = "Profile | Skote - React Admin & Dashboard Template";
+  document.title = " User Profile - React Admin & Dashboard Template";
 
   const dispatch = useDispatch();
 
-  const [email, setemail] = useState("");
-  const [name, setname] = useState("");
-  const [idx, setidx] = useState(1);
+  const [email, setEmail] = useState("");
+  const [name, setName] = useState("");
+  const [idx, setIdx] = useState(1);
+  const [photo, setPhoto] = useState(defaultAvatar);
 
-    const ProfileProperties = createSelector(
-      (state) => state.Profile,
-        (profile) => ({
-          error: profile.error,
-          success: profile.success,
-        })
-    );
+  const ProfileProperties = createSelector(
+    (state) => state.Profile,
+    (profile) => ({
+      error: profile.error,
+      success: profile.success,
+    })
+  );
 
-    const {
-      error,
-      success
-  } = useSelector(ProfileProperties);
+  const { error, success } = useSelector(ProfileProperties);
 
   useEffect(() => {
     if (localStorage.getItem("authUser")) {
       const obj = JSON.parse(localStorage.getItem("authUser"));
+
+      // Firebase auth structure
       if (import.meta.env.VITE_APP_DEFAULTAUTH === "firebase") {
-        setname(obj.displayName);
-        setemail(obj.email);
-        setidx(obj.uid);
+        setName(obj.displayName);
+        setEmail(obj.email);
+        setIdx(obj.uid);
+        setPhoto(obj.photoURL || defaultAvatar);
+
+      // JWT/Fake auth structure
       } else if (
         import.meta.env.VITE_APP_DEFAULTAUTH === "fake" ||
         import.meta.env.VITE_APP_DEFAULTAUTH === "jwt"
       ) {
-        setname(obj.username);
-        setemail(obj.email);
-        setidx(obj.uid);
+        setName(obj.username);
+        setEmail(obj.email);
+        setIdx(obj.uid);
+        setPhoto(defaultAvatar);
       }
+
       setTimeout(() => {
         dispatch(resetProfileFlag());
       }, 3000);
@@ -76,40 +79,37 @@ const UserProfile = (props) => {
   }, [dispatch, success]);
 
   const validation = useFormik({
-    // enableReinitialize : use this flag when initial values needs to be changed
     enableReinitialize: true,
-
     initialValues: {
-      username: name || '',
-      idx: idx || '',
+      username: name || "",
+      idx: idx || "",
     },
     validationSchema: Yup.object({
       username: Yup.string().required("Please Enter Your UserName"),
     }),
     onSubmit: (values) => {
       dispatch(editProfile(values));
-    }
+    },
   });
 
   return (
     <React.Fragment>
       <div className="page-content">
         <Container fluid>
-          {/* Render Breadcrumb */}
-          <Breadcrumb title="Skote" breadcrumbItem="Profile" />
+          <Breadcrumb title="User" breadcrumbItem="Profile" />
 
           <Row>
             <Col lg="12">
-              {error && error ? <Alert color="danger">{error}</Alert> : null}
-              {success ? <Alert color="success">{success}</Alert> : null}
+              {error && <Alert color="danger">{error}</Alert>}
+              {success && <Alert color="success">{success}</Alert>}
 
               <Card>
                 <CardBody>
                   <div className="d-flex">
                     <div className="ms-3">
                       <img
-                        src={avatar}
-                        alt=""
+                        src={photo}
+                        alt={name}
                         className="avatar-md rounded-circle img-thumbnail"
                       />
                     </div>
@@ -142,7 +142,6 @@ const UserProfile = (props) => {
                   <Label className="form-label">User Name</Label>
                   <Input
                     name="username"
-                    // value={name}
                     className="form-control"
                     placeholder="Enter User Name"
                     type="text"
@@ -150,11 +149,16 @@ const UserProfile = (props) => {
                     onBlur={validation.handleBlur}
                     value={validation.values.username || ""}
                     invalid={
-                      validation.touched.username && validation.errors.username ? true : false
+                      validation.touched.username && validation.errors.username
+                        ? true
+                        : false
                     }
                   />
-                  {validation.touched.username && validation.errors.username ? (
-                    <FormFeedback type="invalid">{validation.errors.username}</FormFeedback>
+                  {validation.touched.username &&
+                  validation.errors.username ? (
+                    <FormFeedback type="invalid">
+                      {validation.errors.username}
+                    </FormFeedback>
                   ) : null}
                   <Input name="idx" value={idx} type="hidden" />
                 </div>

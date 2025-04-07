@@ -81,7 +81,7 @@ const Header = props => {
     <React.Fragment>
       <header id="page-topbar">
         <div className="navbar-header">
-          <div className="d-flex">
+          <div className="d-flex align-items-center">
 
             <div className="navbar-brand-box d-lg-none d-md-block">
               <Link to="/" className="logo logo-dark">
@@ -108,7 +108,7 @@ const Header = props => {
               <i className="fa fa-fw fa-bars" />
             </button>
 
-            <form className="app-search d-none d-lg-block">
+            <form className="app-search d-none d-lg-block ms-2">
               <div className="position-relative">
                 <input
                   type="text"
@@ -119,7 +119,8 @@ const Header = props => {
               </div>
             </form>
 
-            <Dropdown
+             
+           {/*} <Dropdown
               className="dropdown-mega d-none d-lg-block ms-2"
               isOpen={megaMenu}
               toggle={() => {
@@ -307,7 +308,7 @@ const Header = props => {
                   </div>
                 </form>
               </div>
-            </div>
+            </div> */}
 
             <LanguageDropdown />
 

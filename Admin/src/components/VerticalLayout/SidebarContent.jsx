@@ -197,7 +197,7 @@ const SidebarContent = (props) => {
               </Link>
             </li>
 
-            <li>
+            {/*<li>
               <Link to="/#" className="has-arrow">
                 <i className="bx bx-store"></i>
                 <span>{props.t("Ecommerce")}</span>
@@ -213,7 +213,7 @@ const SidebarContent = (props) => {
                 </li>
                 <li>
                   <Link to="/ecommerce-orders">{props.t("Orders")}</Link>
-                </li> */}
+                </li> 
                 <li>
                   <Link to="/ecommerce-customers">{props.t("Customers")}</Link>
                 </li> {/*
@@ -225,14 +225,14 @@ const SidebarContent = (props) => {
                 </li>
                 <li>
                   <Link to="/ecommerce-shops">{props.t("Shops")}</Link>
-                </li> */}
+                </li> 
                 <li>
                   <Link to="/ecommerce-add-product">
                     {props.t("Add Product")}
                   </Link>
                 </li>
               </ul>
-            </li>
+            </li>*/}
 
             <li>
               <Link to="/#" className="has-arrow">
@@ -309,7 +309,7 @@ const SidebarContent = (props) => {
               </ul>
             </li>
 
-            <li>
+           {/*} <li>
               <Link to="/#" className="has-arrow ">
                 <i className="bx bx-task"></i>
                 <span>{props.t("Tasks")}</span>
@@ -325,7 +325,7 @@ const SidebarContent = (props) => {
                   <Link to="/tasks-create">{props.t("Create Task")}</Link>
                 </li>
               </ul>
-            </li>
+            </li> */}
 
             <li>
               <Link to="/#" className="has-arrow ">
@@ -343,7 +343,7 @@ const SidebarContent = (props) => {
                   <Link to="/contacts-profile">{props.t("Profile")}</Link>
                 </li>
               </ul>
-          <li>
+         {/*} <li>
   <Link to="/#" className="has-arrow">
     <i className="bx bx-briefcase-alt"></i>
     <span key="t-jobs">{props.t("Jobs")}</span>
