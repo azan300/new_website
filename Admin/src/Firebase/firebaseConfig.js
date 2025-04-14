@@ -24,7 +24,8 @@ const googleProvider = new GoogleAuthProvider();
 const signInWithGoogle = async () => {
   try {
     const result = await signInWithPopup(auth, googleProvider);
-    console.log("User Info:", result.user); // Log user info
+    console.log("User Info:", result); // Log user info
+    localStorage.setItem('auth', JSON.stringify(result.user.auth));
     return result.user; // Return user data
   } catch (error) {
     console.error("Google Sign-In Error:", error.message);
