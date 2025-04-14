@@ -24,16 +24,6 @@ import ProjectsList from "../pages/Projects/projects-list";
 import ProjectsOverview from "../pages/Projects/ProjectOverview/projects-overview";
 import ProjectsCreate from "../pages/Projects/projects-create";
 
-// // //Ecommerce Pages
-import EcommerceProducts from "../pages/Ecommerce/EcommerceProducts";
-import EcommerceProductDetail from "../pages/Ecommerce/EcommerceProductDetail/index";
-import EcommerceOrders from "../pages/Ecommerce/EcommerceOrders/index";
-import EcommerceCustomers from "../pages/Ecommerce/EcommerceCustomers/index";
-import EcommerceCart from "../pages/Ecommerce/EcommerceCart";
-import EcommerceCheckout from "../pages/Ecommerce/EcommerceCheckout";
-import EcommerceShops from "../pages/Ecommerce/EcommerceShops/index";
-import EcommerenceAddProduct from "../pages/Ecommerce/EcommerceAddProduct";
-
 // //Email
 import EmailInbox from "../pages/Email/email-inbox";
 import EmailRead from "../pages/Email/email-read";
@@ -50,24 +40,6 @@ import Login from "../pages/Authentication/Login";
 import Logout from "../pages/Authentication/Logout";
 import Register from "../pages/Authentication/Register";
 import ForgetPwd from "../pages/Authentication/ForgetPassword";
-
-// //  // Inner Authentication
-import Login1 from "../pages/AuthenticationInner/Login";
-import Login2 from "../pages/AuthenticationInner/Login2";
-import Register1 from "../pages/AuthenticationInner/Register";
-import Register2 from "../pages/AuthenticationInner/Register2";
-import Recoverpw from "../pages/AuthenticationInner/Recoverpw";
-import Recoverpw2 from "../pages/AuthenticationInner/Recoverpw2";
-import ForgetPwd1 from "../pages/AuthenticationInner/ForgetPassword";
-import ForgetPwd2 from "../pages/AuthenticationInner/ForgetPassword2";
-import LockScreen from "../pages/AuthenticationInner/auth-lock-screen";
-import LockScreen2 from "../pages/AuthenticationInner/auth-lock-screen-2";
-import ConfirmMail from "../pages/AuthenticationInner/page-confirm-mail";
-import ConfirmMail2 from "../pages/AuthenticationInner/page-confirm-mail-2";
-import EmailVerification from "../pages/AuthenticationInner/auth-email-verification";
-import EmailVerification2 from "../pages/AuthenticationInner/auth-email-verification-2";
-import TwostepVerification from "../pages/AuthenticationInner/auth-two-step-verification";
-import TwostepVerification2 from "../pages/AuthenticationInner/auth-two-step-verification-2";
 
 // // Dashboard
 import Dashboard from "../pages/Dashboard/index";
@@ -94,15 +66,6 @@ import IconFontawesome from "../pages/Icons/IconFontawesome";
 // //Tables
 import BasicTables from "../pages/Tables/BasicTables";
 import DatatableTables from "../pages/Tables/DatatableTables";
-
-//Job
-import JobGrid from "../pages/JobPages/JobGrid/index";
-import JobDetails from "../pages/JobPages/JobDetails";
-import JobCategories from "../pages/JobPages/JobCategories";
-import JobList from "../pages/JobPages/JobList/index";
-import ApplyJobs from "../pages/JobPages/ApplyJobs/index";
-import CandidateList from "../pages/JobPages/CandidateList";
-import CandidateOverview from "../pages/JobPages/CandidateOverview";
 
 // // Forms
 import FormElements from "../pages/Forms/FormElements";
@@ -179,19 +142,6 @@ const authProtectedRoutes = [
   //   // //profile
   { path: "/profile", element: <UserProfile /> },
 
-  //   //Ecommerce
-  {
-    path: "/ecommerce-product-detail/:id",
-    element: <EcommerceProductDetail />,
-  },
-  { path: "/ecommerce-products", element: <EcommerceProducts /> },
-  { path: "/ecommerce-orders", element: <EcommerceOrders /> },
-  { path: "/ecommerce-customers", element: <EcommerceCustomers /> },
-  { path: "/ecommerce-cart", element: <EcommerceCart /> },
-  { path: "/ecommerce-checkout", element: <EcommerceCheckout /> },
-  { path: "/ecommerce-shops", element: <EcommerceShops /> },
-  { path: "/ecommerce-add-product", element: <EcommerenceAddProduct /> },
-
   //   //Email
   { path: "/email-inbox", element: <EmailInbox /> },
   { path: "/email-read/:id?", element: <EmailRead /> },
@@ -215,17 +165,6 @@ const authProtectedRoutes = [
   { path: "/projects-overview", celement: <ProjectsOverview /> },
   { path: "/projects-overview/:id", element: <ProjectsOverview /> },
   { path: "/projects-create", element: <ProjectsCreate /> },
-
-  //  // Job
-  // Job Pages
-  { path: "/job-grid", element: <JobGrid /> },
-  { path: "/job-details", element: <JobDetails /> },
-  { path: "/job-categories", element: <JobCategories /> },
-  { path: "/job-list", element: <JobList /> },
-  { path: "/job-apply", element: <ApplyJobs /> },
-  { path: "/candidate-list", element: <CandidateList /> },
-  { path: "/candidate-overview", element: <CandidateOverview /> },
-
 
   // Contacts
   { path: "/contacts-grid", element: <ContactsGrid /> },
@@ -312,27 +251,6 @@ const publicRoutes = [
   { path: "/pages-404", element: <Pages404 /> },
   { path: "/pages-500", element: <Pages500 /> },
 
-
-  //   // Authentication Inner
-  { path: "/pages-login", element: <Login1 /> },
-  { path: "/pages-login-2", element: <Login2 /> },
-  { path: "/pages-register", element: <Register1 /> },
-  { path: "/pages-register-2", element: <Register2 /> },
-  { path: "/page-recoverpw", element: <Recoverpw /> },
-  { path: "/page-recoverpw-2", element: <Recoverpw2 /> },
-  { path: "/pages-forgot-pwd", element: <ForgetPwd1 /> },
-  { path: "/pages-forgot-pwd-2", element: <ForgetPwd2 /> },
-  { path: "/auth-lock-screen", element: <LockScreen /> },
-  { path: "/auth-lock-screen-2", element: <LockScreen2 /> },
-  { path: "/page-confirm-mail", element: <ConfirmMail /> },
-  { path: "/page-confirm-mail-2", element: <ConfirmMail2 /> },
-  { path: "/auth-email-verification", element: <EmailVerification /> },
-  { path: "/auth-email-verification-2", element: <EmailVerification2 /> },
-  { path: "/auth-two-step-verification", element: <TwostepVerification /> },
-  {
-    path: "/auth-two-step-verification-2",
-    element: <TwostepVerification2 />,
-  },
 ];
 
 // export { authProtectedRoutes, publicRoutes };
