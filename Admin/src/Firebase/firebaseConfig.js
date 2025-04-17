@@ -1,7 +1,7 @@
-
-// Import Firebase authentication functions
+// Import Firebase modules
 import { initializeApp } from "firebase/app";
 import { getAuth, GoogleAuthProvider, signInWithPopup, signOut } from "firebase/auth";
+import { getFirestore } from "firebase/firestore"; // <-- Add this
 
 // Firebase Configuration
 const firebaseConfig = {
@@ -16,17 +16,18 @@ const firebaseConfig = {
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 
-// Initialize Firebase Authentication
+// Initialize Firebase services
 const auth = getAuth(app);
+const db = getFirestore(app); // <-- Initialize Firestore
 const googleProvider = new GoogleAuthProvider();
 
 // Google Sign-In Function
 const signInWithGoogle = async () => {
   try {
     const result = await signInWithPopup(auth, googleProvider);
-    console.log("User Info:", result); // Log user info
+    console.log("User Info:", result);
     localStorage.setItem('auth', JSON.stringify(result.user.auth));
-    return result.user; // Return user data
+    return result.user;
   } catch (error) {
     console.error("Google Sign-In Error:", error.message);
   }
@@ -42,4 +43,4 @@ const logout = async () => {
   }
 };
 
-export { auth, googleProvider, signInWithGoogle, logout };
+export { auth, googleProvider, signInWithGoogle, logout, db }; // <-- Export db

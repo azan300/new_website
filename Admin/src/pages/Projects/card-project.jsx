@@ -38,14 +38,14 @@ const CardProject = ({ projects }) => {
                   <p className="text-muted mb-4">{project.description}</p>
 
                   <div className="avatar-group">
-                    {project.team.map((team, key) =>
+                  {(project.team || []).map((team, key) =>
                       !team.img || team.img !== "Null" ? (
                         <React.Fragment key={key}>
                           <div className="avatar-group-item">
                             <Link
                               to="#"
                               className="d-inline-block"
-                              id={"member" + team.id}
+                              id={`member-${project.id}-${team.id}`}
                             >
                               <img
                                 src={team.img}
@@ -54,7 +54,7 @@ const CardProject = ({ projects }) => {
                               />
                               <UncontrolledTooltip
                                 placement="top"
-                                target={"member" + team.id}
+                                target={`member-${project.id}-${team.id}`}
                               >
                                 {team.fullname}
                               </UncontrolledTooltip>

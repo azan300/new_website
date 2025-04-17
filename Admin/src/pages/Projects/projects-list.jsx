@@ -1,6 +1,9 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Link , useNavigate} from "react-router-dom";
 import moment from 'moment';
+import { db } from "../../Firebase/firebaseConfig"; // Adjust path if needed
+import { collection, getDocs, doc, deleteDoc, updateDoc } from "firebase/firestore";
+
 
 import {
   Badge,
@@ -36,12 +39,6 @@ import "flatpickr/dist/themes/material_blue.css";
 import Breadcrumbs from "../../components/Common/Breadcrumb";
 import DeleteModal from "../../components/Common/DeleteModal";
 
-import {
-  getProjects as onGetProjects,
-  updateProject as onUpdateProject,
-  deleteProject as onDeleteProject,
-} from "/src/store/actions";
-
 //redux
 import { useSelector, useDispatch } from "react-redux";
 import { createSelector } from "reselect";
@@ -72,16 +69,6 @@ const ProjectsList = () => {
 
   const dispatch = useDispatch();
   const navigate = useNavigate();
-
-  const ProjectsProjectProperties = createSelector(
-    (state) => state.projects,
-    (Projects) => ({
-      projects: Projects.projects,
-      loading: Projects.loading
-    })
-  );
-
-  const { projects, loading } = useSelector(ProjectsProjectProperties);
 
   const [isLoading, setLoading] = useState(loading)
   const [modal, setModal] = useState(false);
@@ -124,20 +111,39 @@ const ProjectsList = () => {
     setDeleteModal(true);
   }, []);
 
-  const handleDeleteOrder = () => {
+  const handleDeleteOrder = async () => {
     if (project && project.id) {
-      dispatch(onDeleteProject(project.id));
+      try {
+        await deleteDoc(doc(db, "projects", project.id));
+        console.log("Project deleted");
+  
+        // Refresh project list
+        const querySnapshot = await getDocs(collection(db, "projects"));
+        const projectArray = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        setProjectData(projectArray);
+  
+      } catch (error) {
+        console.error("Error deleting project:", error);
+      }
     }
     setDeleteModal(false);
   };
+  
 
-  useEffect(() => {
-    dispatch(onGetProjects());
-  }, [dispatch]);
+useEffect(() => {
+  const fetchProjects = async () => {
+    try {
+      const querySnapshot = await getDocs(collection(db, "projects"));
+      const projectArray = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setProjectData(projectArray);
+    } catch (error) {
+      console.error("Error fetching projects:", error);
+    }
+  };
 
-  useEffect(() => {
-    setProjectData(projects);
-  }, [projects]);
+  fetchProjects();
+}, []);
+
 
   const [selectedImage, setSelectedImage] = useState();
 
@@ -177,10 +183,9 @@ const ProjectsList = () => {
       status: Yup.string().required("Please Enter Your Status"),
       color: Yup.string().required("Please Enter Your Color"),
     }),
-    onSubmit: (values) => {
+    onSubmit: async (values) => {
       if (isEdit) {
         const updateProject = {
-          id: project.id,
           img: values.img,
           name: values.name,
           description: values.description,
@@ -189,11 +194,24 @@ const ProjectsList = () => {
           dueDate: values.dueDate,
           team: values.team,
         };
-        // update project
-        dispatch(onUpdateProject(updateProject));
+    
+        try {
+          const projectRef = doc(db, "projects", project.id);
+          await updateDoc(projectRef, updateProject);
+          console.log("Project updated successfully");
+    
+          // Refresh project list
+          const querySnapshot = await getDocs(collection(db, "projects"));
+          const projectArray = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+          setProjectData(projectArray);
+    
+        } catch (error) {
+          console.error("Error updating project:", error);
+        }
       }
       toggle();
     },
+     
   });
 
 

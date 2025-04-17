@@ -2,260 +2,175 @@ import React, { useEffect, useState, useMemo } from "react";
 import { Link } from "react-router-dom";
 import withRouter from "../../../components/Common/withRouter";
 import TableContainer from "../../../components/Common/TableContainer";
-import Spinners from "../../../components/Common/Spinner"
-import { Card, CardBody, Col, Container, Row, Modal, ModalHeader, ModalBody, Label, FormFeedback, Input, Form, Button, UncontrolledTooltip, UncontrolledDropdown, DropdownToggle, DropdownMenu, DropdownItem, FormGroup, Badge } from "reactstrap";
+import Spinners from "../../../components/Common/Spinner";
+import {
+  Card, CardBody, Col, Container, Row, Modal, ModalHeader, ModalBody, Label, FormFeedback, Input,
+  Form, Button, UncontrolledTooltip
+} from "reactstrap";
 import * as Yup from "yup";
 import { useFormik } from "formik";
+import { db } from "../../../Firebase/firebaseConfig";
+import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc } from "firebase/firestore";
 
-//Import Breadcrumb
 import Breadcrumbs from "/src/components/Common/Breadcrumb";
 import DeleteModal from "/src/components/Common/DeleteModal";
-
-import {
-  getUsers as onGetUsers,
-  addNewUser as onAddNewUser,
-  updateUser as onUpdateUser,
-  deleteUser as onDeleteUser,
-} from "/src/store/contacts/actions";
+import { ToastContainer } from "react-toastify";
 import { isEmpty } from "lodash";
 
-//redux
-import { useSelector, useDispatch } from "react-redux";
-import { createSelector } from "reselect";
-import { ToastContainer } from "react-toastify";
-
 const ContactsList = () => {
-  //meta title
-  document.title = "Contact User | Skote - Vite React Admin & Dashboard Template";
+  document.title = "Contact User - Vite React Admin & Dashboard Template";
 
-  const dispatch = useDispatch();
-  const [contact, setContact] = useState();
-  // validation
+  const [users, setUsers] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [modal, setModal] = useState(false);
+  const [deleteModal, setDeleteModal] = useState(false);
+  const [isEdit, setIsEdit] = useState(false);
+  const [contact, setContact] = useState(null);
+
+  const toggle = () => setModal(!modal);
+
+  const fetchUsers = async () => {
+    try {
+      const querySnapshot = await getDocs(collection(db, "contacts"));
+      const userData = querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      setUsers(userData);
+    } catch (error) {
+      console.error("Error fetching users:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchUsers();
+  }, []);
+
   const validation = useFormik({
-    // enableReinitialize : use this flag when initial values needs to be changed
     enableReinitialize: true,
-
     initialValues: {
-      name: (contact && contact.name) || "",
-      designation: (contact && contact.designation) || "",
-      tags: (contact && contact.tags) || "",
-      email: (contact && contact.email) || "",
-      projects: (contact && contact.projects) || "",
+      name: contact?.name || "",
+      designation: contact?.designation || "",
+      tags: contact?.tags || [],
+      email: contact?.email || "",
+      projects: contact?.projects || "",
     },
     validationSchema: Yup.object({
       name: Yup.string().required("Please Enter Your Name"),
       designation: Yup.string().required("Please Enter Your Designation"),
-      tags: Yup.array().required("Please Enter Tag"),
-      email: Yup.string()
-        .matches(/^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$/, "Please Enter Valid Email")
-        .required("Please Enter Your Email"),
+      tags: Yup.array().min(1, "Please select at least one tag"),
+      email: Yup.string().email("Invalid email").required("Please Enter Your Email"),
       projects: Yup.string().required("Please Enter Your Project"),
     }),
-    onSubmit: (values) => {
+    onSubmit: async (values) => {
       if (isEdit) {
-        const updateUser = {
-          id: contact.id,
-          name: values.name,
-          designation: values.designation,
-          tags: values.tags,
-          email: values.email,
-          projects: values.projects,
-        };
-
-        // update user
-        dispatch(onUpdateUser(updateUser));
-        validation.resetForm();
-        setIsEdit(false);
+        try {
+          const userRef = doc(db, "contacts", contact.id);
+          await updateDoc(userRef, values);
+        } catch (err) {
+          console.error("Update failed:", err);
+        }
       } else {
-        const newUser = {
-          id: Math.floor(Math.random() * (30 - 20)) + 20,
-          name: values["name"],
-          designation: values["designation"],
-          email: values["email"],
-          tags: values["tags"],
-          projects: values["projects"],
-        };
-        // save new user
-        dispatch(onAddNewUser(newUser));
-        validation.resetForm();
+        try {
+          await addDoc(collection(db, "contacts"), values);
+        } catch (err) {
+          console.error("Add failed:", err);
+        }
       }
+      validation.resetForm();
+      setIsEdit(false);
       toggle();
-    },
+      fetchUsers();
+    }
   });
 
-  const ContactsProperties = createSelector(
-    (state) => state.contacts,
-    (Contacts) => ({
-      users: Contacts.users,
-      loading: Contacts.loading
-    })
-  );
-
-  const {
-    users, loading
-  } = useSelector(ContactsProperties);
-
-  const [isLoading, setLoading] = useState(loading);
-
-  const [modal, setModal] = useState(false);
-  const [isEdit, setIsEdit] = useState(false);
-
-  useEffect(() => {
-    if (users && !users.length) {
-      dispatch(onGetUsers());
-      setIsEdit(false);
-    }
-  }, [dispatch, users]);
-
-  useEffect(() => {
-    setContact(users);
-    setIsEdit(false);
-  }, [users]);
-
-  useEffect(() => {
-    if (!isEmpty(users) && !!isEdit) {
-      setContact(users);
-      setIsEdit(false);
-    }
-  }, [users]);
-
-  const toggle = () => {
-    setModal(!modal);
-  };
-
-  const handleUserClick = (arg) => {
-    const user = arg;
-    setContact({
-      id: user.id,
-      name: user.name,
-      designation: user.designation,
-      email: user.email,
-      tags: user.tags,
-      projects: user.projects,
-    });
+  const handleUserClick = (user) => {
+    setContact(user);
     setIsEdit(true);
-
     toggle();
-  };
-
-  //delete customer
-  const [deleteModal, setDeleteModal] = useState(false);
-
-  const onClickDelete = (users) => {
-    setContact(users);
-    setDeleteModal(true);
-  };
-
-  const handleDeleteUser = () => {
-    if (contact && contact.id) {
-      dispatch(onDeleteUser(contact.id));
-    }
-    setContact("");
-    setDeleteModal(false);
   };
 
   const handleUserClicks = () => {
-    setContact("");
+    setContact(null);
     setIsEdit(false);
     toggle();
   };
 
-  const columns = useMemo(
-    () => [
-      {
-        header: "#",
-        accessorKey: "img",
-        cell: (cell) => (
-          <>
-            {!cell.getValue() ? (
-              <div className="avatar-xs">
-                <span className="avatar-title rounded-circle">{cell.row.original.name.charAt(0)} </span>
-              </div>
-            ) : (
-              <div>
-                <img className="rounded-circle avatar-xs" src={cell.getValue()} alt="" />
-              </div>
-            )}
-          </>
-        ),
-        enableColumnFilter: false,
-        enableSorting: true,
-      },
-      {
-        header: 'Name',
-        accessorKey: 'name',
-        enableColumnFilter: false,
-        enableSorting: true,
-        cell: (cell) => {
-          return (
-            <>
-              <h5 className='font-size-14 mb-1'>
-                <Link to='#' className='text-dark'>{cell.getValue()}</Link>
-              </h5>
-              <p className="text-muted mb-0">{cell.row.original.designation}</p>
-            </>
-          )
-        }
-      },
-      {
-        header: 'Email',
-        accessorKey: 'email',
-        enableColumnFilter: false,
-        enableSorting: true,
-      },
-      {
-        header: 'Tags',
-        accessorKey: 'tags',
-        enableColumnFilter: false,
-        enableSorting: true,
-        cell: (cell) => {
-          return (
-            <div>
-              {
-                cell.getValue()?.map((item, index) => (
-                  <Link to="#1" className="badge badge-soft-primary font-size-11 m-1" key={index}>{item}</Link>
-                ))
-              }
-            </div>
-          );
-        },
-      },
-      {
-        header: 'Projects',
-        accessorKey: 'projects',
-        enableColumnFilter: false,
-        enableSorting: true,
-      },
-      {
-        header: 'Action',
-        cell: (cellProps) => {
-          return (
-            <div className="d-flex gap-3">
-              <Link
-                to="#"
-                className="text-success"
-                onClick={() => {
-                  const userData = cellProps.row.original;
-                  handleUserClick(userData);
-                }}
-              >
-                <i className="mdi mdi-pencil font-size-18" id="edittooltip" />
-              </Link>
-              <Link
-                to="#"
-                className="text-danger"
-                onClick={() => {
-                  const userData = cellProps.row.original; onClickDelete(userData);
-                }}>
-                <i className="mdi mdi-delete font-size-18" id="deletetooltip" />
-              </Link>
-            </div>
-          );
-        }
-      },
-    ],
-    []
-  );
+  const onClickDelete = (user) => {
+    setContact(user);
+    setDeleteModal(true);
+  };
+
+  const handleDeleteUser = async () => {
+    if (contact?.id) {
+      try {
+        await deleteDoc(doc(db, "contacts", contact.id));
+        fetchUsers();
+      } catch (err) {
+        console.error("Delete failed:", err);
+      }
+    }
+    setContact(null);
+    setDeleteModal(false);
+  };
+
+  const columns = useMemo(() => [
+    {
+      header: "#",
+      accessorKey: "img",
+      cell: (cell) => (
+        <div className="avatar-xs">
+          <span className="avatar-title rounded-circle">{cell.row.original.name.charAt(0)}</span>
+        </div>
+      ),
+    },
+    {
+      header: "Name",
+      accessorKey: "name",
+      cell: (cell) => (
+        <>
+          <h5 className="font-size-14 mb-1">
+            <Link to="#" className="text-dark">{cell.getValue()}</Link>
+          </h5>
+          <p className="text-muted mb-0">{cell.row.original.designation}</p>
+        </>
+      ),
+    },
+    {
+      header: "Email",
+      accessorKey: "email",
+    },
+    {
+      header: "Tags",
+      accessorKey: "tags",
+      cell: (cell) => (
+        <>
+          {cell.getValue()?.map((tag, i) => (
+            <span key={i} className="badge badge-soft-primary font-size-11 m-1">{tag}</span>
+          ))}
+        </>
+      ),
+    },
+    {
+      header: "Projects",
+      accessorKey: "projects",
+    },
+    {
+      header: "Action",
+      cell: (cellProps) => (
+        <div className="d-flex gap-3">
+          <Link to="#" className="text-success" onClick={() => handleUserClick(cellProps.row.original)}>
+            <i className="mdi mdi-pencil font-size-18" />
+          </Link>
+          <Link to="#" className="text-danger" onClick={() => onClickDelete(cellProps.row.original)}>
+            <i className="mdi mdi-delete font-size-18" />
+          </Link>
+        </div>
+      ),
+    },
+  ], []);
 
   return (
     <React.Fragment>
@@ -266,96 +181,81 @@ const ContactsList = () => {
       />
       <div className="page-content">
         <Container fluid>
-          {/* Render Breadcrumbs */}
           <Breadcrumbs title="Contacts" breadcrumbItem="User List" />
-          {
-            isLoading ? <Spinners setLoading={setLoading} />
-              :
-              <Row>
-                <Col lg="12">
-                  <Card>
-                    <CardBody>
+          {isLoading ? (
+            <Spinners setLoading={setIsLoading} />
+          ) : (
+            <Row>
+              <Col lg="12">
+                <Card>
+                  <CardBody>
+                    <TableContainer
+                      columns={columns}
+                      data={users}
+                      isGlobalFilter
+                      isPagination
+                      isCustomPageSize
+                      SearchPlaceholder="Search..."
+                      isAddButton
+                      handleUserClick={handleUserClicks}
+                      buttonClass="btn btn-success btn-rounded mb-2"
+                      buttonName="New Contact"
+                      tableClass="align-middle table-nowrap table-hover dt-responsive nowrap w-100 dataTable no-footer dtr-inline"
+                      theadClass="table-light"
+                      paginationWrapper="dataTables_paginate paging_simple_numbers pagination-rounded"
+                      pagination="pagination"
+                    />
+                  </CardBody>
+                </Card>
+              </Col>
+            </Row>
+          )}
 
-                      <TableContainer
-                        columns={columns}
-                        data={users || []}
-                        isGlobalFilter={true}
-                        isPagination={true}
-                        SearchPlaceholder="Search..."
-                        isCustomPageSize={true}
-                        isAddButton={true}
-                        handleUserClick={handleUserClicks}
-                        buttonClass="btn btn-success btn-rounded waves-effect waves-light addContact-modal mb-2"
-                        buttonName="New Contact"
-                        tableClass="align-middle table-nowrap table-hover dt-responsive nowrap w-100 dataTable no-footer dtr-inline"
-                        theadClass="table-light"
-                        paginationWrapper="dataTables_paginate paging_simple_numbers pagination-rounded"
-                        pagination="pagination"
-                      />
-                    </CardBody>
-                  </Card>
-                </Col>
-              </Row>
-          }
           <Modal isOpen={modal} toggle={toggle}>
-            <ModalHeader toggle={toggle} tag="h4"> {!!isEdit ? "Edit User" : "Add User"}</ModalHeader>
+            <ModalHeader toggle={toggle}>
+              {isEdit ? "Edit User" : "Add User"}
+            </ModalHeader>
             <ModalBody>
-              <Form
-                onSubmit={e => {
-                  e.preventDefault();
-                  validation.handleSubmit();
-                  return false;
-                }}
-              >
+              <Form onSubmit={validation.handleSubmit}>
                 <Row>
                   <Col xs={12}>
                     <div className="mb-3">
                       <Label>Name</Label>
                       <Input
                         name="name"
-                        type="text"
+                        value={validation.values.name}
                         onChange={validation.handleChange}
                         onBlur={validation.handleBlur}
-                        value={validation.values.name || ""}
-                        invalid={
-                          validation.touched.name && validation.errors.name ? true : false}
+                        invalid={validation.touched.name && validation.errors.name}
                       />
-                      {validation.touched.name &&
-                        validation.errors.name ? (
-                        <FormFeedback type="invalid">
-                          {validation.errors.name}
-                        </FormFeedback>
-                      ) : null}
+                      <FormFeedback>{validation.errors.name}</FormFeedback>
                     </div>
+
                     <div className="mb-3">
                       <Label>Email</Label>
                       <Input
                         name="email"
-                        label="Email"
                         type="email"
+                        value={validation.values.email}
                         onChange={validation.handleChange}
                         onBlur={validation.handleBlur}
-                        value={validation.values.email || ""}
-                        invalid={
-                          validation.touched.email && validation.errors.email ? true : false}
+                        invalid={validation.touched.email && validation.errors.email}
                       />
-                      {validation.touched.email && validation.errors.email ?
-                        (
-                          <FormFeedback type="invalid">   {validation.errors.email} </FormFeedback>
-                        ) : null}
+                      <FormFeedback>{validation.errors.email}</FormFeedback>
                     </div>
+
                     <div className="mb-3">
-                      <Label>Option</Label>
+                      <Label>Tags</Label>
                       <Input
                         type="select"
                         name="tags"
-                        className="form-select"
-                        multiple={true}
-                        onChange={validation.handleChange}
+                        multiple
+                        value={validation.values.tags}
+                        onChange={e =>
+                          validation.setFieldValue("tags", Array.from(e.target.selectedOptions, option => option.value))
+                        }
                         onBlur={validation.handleBlur}
-                        value={validation.values.tags || []}
-                        invalid={
-                          validation.touched.tags && validation.errors.tags ? true : false}
+                        invalid={validation.touched.tags && validation.errors.tags}
                       >
                         <option>Photoshop</option>
                         <option>illustrator</option>
@@ -367,59 +267,46 @@ const ContactsList = () => {
                         <option>Ruby</option>
                         <option>Css</option>
                       </Input>
-                      {validation.touched.tags && validation.errors.tags ?
-                        (
-                          <FormFeedback type="invalid">  {validation.errors.tags} </FormFeedback>
-                        ) : null}
+                      <FormFeedback>{validation.errors.tags}</FormFeedback>
                     </div>
+
                     <div className="mb-3">
                       <Label>Projects</Label>
                       <Input
                         name="projects"
-                        label="Projects"
-                        type="text"
+                        value={validation.values.projects}
                         onChange={validation.handleChange}
                         onBlur={validation.handleBlur}
-                        value={validation.values.projects || ""}
-                        invalid={
-                          validation.touched.projects && validation.errors.projects ? true : false}
+                        invalid={validation.touched.projects && validation.errors.projects}
                       />
-                      {validation.touched.projects && validation.errors.projects ?
-                        (
-                          <FormFeedback type="invalid"> {validation.errors.projects}  </FormFeedback>
-                        ) : null}
+                      <FormFeedback>{validation.errors.projects}</FormFeedback>
                     </div>
+
                     <div className="mb-3">
                       <Label>Designation</Label>
                       <Input
                         type="select"
                         name="designation"
-                        className="form-select"
+                        value={validation.values.designation}
                         onChange={validation.handleChange}
                         onBlur={validation.handleBlur}
-                        value={validation.values.designation || ''}
-                        invalid={
-                          validation.touched.designation && validation.errors.designation ? true : false}
+                        invalid={validation.touched.designation && validation.errors.designation}
                       >
                         <option>Frontend Developer</option>
                         <option>UI/UX Designer</option>
                         <option>Backend Developer</option>
                         <option>Full Stack Developer</option>
                       </Input>
-                      {validation.touched.designation && validation.errors.designation ?
-                        (
-                          <FormFeedback type="invalid">  {validation.errors.designation} </FormFeedback>
-                        ) : null}
+                      <FormFeedback>{validation.errors.designation}</FormFeedback>
                     </div>
                   </Col>
                 </Row>
-                <Row>
-                  <Col>
-                    <div className="text-end">
-                      <Button type="submit" color="success" className="save-user"> {!!isEdit ? "Update" : "Add"}  </Button>
-                    </div>
-                  </Col>
-                </Row>
+
+                <div className="text-end">
+                  <Button type="submit" color="success">
+                    {isEdit ? "Update" : "Add"}
+                  </Button>
+                </div>
               </Form>
             </ModalBody>
           </Modal>

@@ -2,6 +2,8 @@ import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import Dropzone from "react-dropzone";
 import { Button, Card, CardBody, Col, Container, Form, FormFeedback, Input, Label, Row, UncontrolledTooltip } from "reactstrap";
+import { db } from "../..Firebase/'firebaseCongif";
+import { collection, addDoc, Timestamp } from "firebase/firestore";
 
 //Import Breadcrumb
 import Breadcrumbs from "../../components/Common/Breadcrumb";
@@ -80,8 +82,26 @@ const ProjectsCreate = () => {
       startdate: Yup.string().required("Please Enter Your Start Date"),
       projectImage: Yup.string().required("Please Select Image"),
     }),
-    onSubmit: (values) => {
+    onSubmit: async (values) => {
       // console.log(values);
+      try {
+        await addDoc(collection(db, "projects"), {
+          name: values.projectname,
+          description: values.projectdesc,
+          assignedTo: values.assignedto,
+          image: values.projectImage,
+          startDate: values.startdate,
+          createdAt: Timestamp.now(),
+        });
+    
+        alert("Project created successfully!");
+        validation.resetForm();
+        setSelectedFiles([]);
+        setSelectedImage(null);
+        setImgStore([]);
+      } catch (error) {
+        console.error("Error adding project: ", error);
+      }
     }
   });
   

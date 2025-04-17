@@ -1,29 +1,29 @@
-const projectColumns = () => [
+const projectColumns = [
   {
-    dataField: "id",
-    text: "#",
-    sort: true,
+    header: "#",
+    accessorKey: "id",
+    enableSorting: true,
   },
   {
-    dataField: "name",
-    text: "Name",
-    sort: true,
+    header: "Name",
+    accessorKey: "name",
+    enableSorting: true,
   },
   {
-    dataField: "startDate",
-    text: "Start Date",
-    sort: true,
+    header: "Start Date",
+    accessorKey: "startDate",
+    enableSorting: true,
   },
   {
-    dataField: "deadline",
-    text: "Deadline",
-    sort: true,
+    header: "Deadline",
+    accessorKey: "deadline",
+    enableSorting: true,
   },
   {
-    dataField: "budget",
-    text: "Budget",
-    sort: true,
+    header: "Budget",
+    accessorKey: "budget",
+    enableSorting: true,
   },
-]
+];
 
-export default projectColumns
+export default projectColumns;

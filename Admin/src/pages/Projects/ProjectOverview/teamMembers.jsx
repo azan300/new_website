@@ -1,52 +1,53 @@
-import React from "react"
-import PropTypes from "prop-types"
-import { Card, CardBody, CardTitle, Table } from "reactstrap"
-import { Link } from "react-router-dom"
+import React from "react";
+import PropTypes from "prop-types";
+import { Card, CardBody, CardTitle } from "reactstrap";
+import { Link } from "react-router-dom";
 
-import { OverviewTeamMember } from "../../../common/data";
-
-const TeamMembers = () => {
+const TeamMembers = ({ team }) => {
   return (
     <Card>
       <CardBody>
         <CardTitle className="mb-4">Team Members</CardTitle>
-
-        <div className="table-responsive">
-          <Table className="table align-middle table-nowrap">
-            {OverviewTeamMember.map((item, key) => (
-              <tbody key={key}>
-                <tr>
-
-                  <td style={{ width: "50px" }}>
-                    {item.img ?
-                      <img src={item.img} className="rounded-circle avatar-xs" alt="" />
-                      :
-                      <div className="avatar-xs">
-                        <span className="avatar-title rounded-circle bg-primary text-white font-size-16">
-                          {item.profile}
-                        </span>
-                      </div>
-                    }
-                  </td>
-                  <td><h5 className="font-size-14 m-0"><Link to="#" className="text-dark">{item.title}</Link></h5></td>
-                  <td>
-                    <div>
-                      <Link to="#" className="badge bg-primary-subtle text-primary font-size-11 me-1">{item.label_1}</Link>
-                      <Link to="#" className="badge bg-primary-subtle text-primary font-size-11">{item.label_2}</Link>
-                    </div>
-                  </td>
-                </tr>
-              </tbody>
-            ))}
-          </Table>
+        <div className="list-group">
+          {(team || []).map((member, index) => (
+            <div
+              key={index}
+              className="d-flex align-items-center mb-3 border-bottom pb-2"
+            >
+              <div className="flex-shrink-0 me-3">
+                {member.img && member.img !== "Null" ? (
+                  <img
+                    src={member.img}
+                    alt={member.name || "member"}
+                    className="rounded-circle avatar-xs"
+                  />
+                ) : (
+                  <div
+                    className={`avatar-xs rounded-circle bg-${member.color || "secondary"} text-white d-flex align-items-center justify-content-center`}
+                  >
+                    <span className="font-size-14">
+                      {member.name ? member.name.charAt(0) : "?"}
+                    </span>
+                  </div>
+                )}
+              </div>
+              <div className="flex-grow-1">
+                <h5 className="font-size-14 mb-1">
+                  <Link to="#" className="text-dark">
+                    {member.fullname || member.name || "Unnamed"}
+                  </Link>
+                </h5>
+              </div>
+            </div>
+          ))}
         </div>
       </CardBody>
     </Card>
-  )
-}
+  );
+};
 
 TeamMembers.propTypes = {
-  team: PropTypes.array,
-}
+  team: PropTypes.array.isRequired,
+};
 
-export default TeamMembers
+export default TeamMembers;

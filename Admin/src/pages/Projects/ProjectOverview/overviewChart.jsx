@@ -4,14 +4,19 @@ import { Card, CardBody, CardTitle } from "reactstrap";
 import ReactApexChart from "react-apexcharts";
 import getChartColorsArray from "../../../components/Common/ChartsDynamicColor";
 
-const OverviewChart = ({ dataColors }) => {
+const OverviewChart = ({ dataColors, stats }) => {
   const apexOverviewColors = getChartColorsArray(dataColors);
+
+  // Fallback data if none is passed
+  const chartData = stats?.length > 0 ? stats : [42, 56, 40, 64, 26, 42, 56, 35, 62];
+  const categories = chartData.map((_, i) => `Week ${i + 1}`);
+
   const options = {
     chart: {
       height: 290,
       type: "bar",
       toolbar: {
-        show: !1,
+        show: false,
       },
     },
     plotOptions: {
@@ -21,18 +26,18 @@ const OverviewChart = ({ dataColors }) => {
       },
     },
     dataLabels: {
-      enabled: !1,
+      enabled: false,
     },
     series: [
       {
-        name: "Overview",
-        data: [42, 56, 40, 64, 26, 42, 56, 35, 62],
+        name: "Progress",
+        data: chartData,
       },
     ],
     grid: {
       yaxis: {
         lines: {
-          show: !1,
+          show: false,
         },
       },
     },
@@ -45,7 +50,7 @@ const OverviewChart = ({ dataColors }) => {
       labels: {
         rotate: -90,
       },
-      categories: ["1", "2", "3", "4", "5", "6", "7", "8", "9"],
+      categories: categories,
       title: {
         text: "Week",
       },
@@ -55,15 +60,15 @@ const OverviewChart = ({ dataColors }) => {
 
   const series = [
     {
-      name: "Overview",
-      data: [42, 56, 40, 64, 26, 42, 56, 35, 62],
+      name: "Progress",
+      data: chartData,
     },
   ];
 
   return (
     <Card>
       <CardBody>
-        <CardTitle className="mb-4">Overview</CardTitle>
+        <CardTitle className="mb-4">Project Overview</CardTitle>
         <ReactApexChart
           options={options}
           series={series}
@@ -77,8 +82,8 @@ const OverviewChart = ({ dataColors }) => {
 };
 
 OverviewChart.propTypes = {
-  options: PropTypes.object,
-  series: PropTypes.array,
+  dataColors: PropTypes.string,
+  stats: PropTypes.array, // e.g., [30, 40, 45, 50, 70]
 };
 
 export default OverviewChart;

@@ -10,37 +10,36 @@ import CardProject from "./card-project";
 import Spinners from "../../components/Common/Spinner";
 import Paginations from "../../components/Common/Pagination";
 
-import { getProjects as onGetProjects } from "/src/store/actions";
+import { db } from "../../Firebase/firebaseConfig"; // Adjust path if needed
+import { collection, getDocs } from "firebase/firestore";
 
-//redux
-import { useSelector, useDispatch } from "react-redux";
-import { createSelector } from "reselect";
 
 const ProjectsGrid = () => {
   //meta title
   document.title =
     "Projects Grid | Skote - Vite React Admin & Dashboard Template";
 
-  const dispatch = useDispatch();
-
-  const ProjectsProjectProperties = createSelector(
-    (state) => state.projects,
-    (Projects) => ({
-      projects: Projects.projects,
-      loading: Projects.loading
-    })
-  );
-
-  const {
-    projects, loading
-  } = useSelector(ProjectsProjectProperties);
-
-  const [isLoading, setLoading] = useState(loading);
+    const [projects, setProjects] = useState([]);
+    const [isLoading, setLoading] = useState(true);
+    
   const [projectsList, setProjectsList] = useState();
 
   useEffect(() => {
-    dispatch(onGetProjects());
-  }, [dispatch]);
+    const fetchProjects = async () => {
+      try {
+        const querySnapshot = await getDocs(collection(db, "projects"));
+        const projectArray = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        setProjects(projectArray);
+      } catch (error) {
+        console.error("Error fetching projects:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+  
+    fetchProjects();
+  }, []);
+  
 
 
   // pagination
