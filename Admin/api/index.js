@@ -2,22 +2,45 @@ const functions = require("firebase-functions");
 const express = require("express");
 const cors = require("cors");
 const { google } = require("googleapis");
-const {authenticate} = require('@google-cloud/local-auth');
+const oauth2Client = require("./utils/oauth2Client");
+const gmailRoutes = require("./routes/gmailRoutes");
+const { serverPort } = require("./config");
 
 const app = express();
 app.use(cors({ origin: true }));
 app.use(express.json()); // to parse JSON request bodies
 
-// Replace with your actual credentials
-const CLIENT_ID = "602714767093-hulo8d18n3t9i9qa9fal0d4afl74iods.apps.googleusercontent.com";
-const CLIENT_SECRET = "YGOCSPX-0QKnHbil4qG4uZf-pshQ0gppLUf8";
-const REDIRECT_URI = "https://straightuproofing-79614.web.app/api/store-refresh-token"; // match Google Cloud Console
+// // Auth simulation middleware (replace with real token management)
+app.use((req, res, next) => {
+  // For demo purposes, use hardcoded token
+  req.token = {
+    access_token: '',
+    refresh_token: ''
+  };
+  next();
+});
 
-const oauth2Client = new google.auth.OAuth2(
-  CLIENT_ID,
-  CLIENT_SECRET,
-  REDIRECT_URI,
-);
+// Gmail Routes
+app.use("/gmail", gmailRoutes);
+
+// Auth URL
+app.get("/auth", (req, res) => {
+  const scopes = ["https://www.googleapis.com/auth/gmail.readonly", "https://www.googleapis.com/auth/gmail.send"];
+  const url = oauth2Client.generateAuthUrl({
+    access_type: "offline",
+    scope: scopes,
+  });
+  res.redirect(url);
+});
+
+// OAuth2 Callback
+app.get("/oauth2callback", async (req, res) => {
+  const { code } = req.query;
+  const { tokens } = await oauth2Client.getToken(code);
+  // For now, just print token. You'd store this in DB/session in real app
+  console.log("Tokens:", tokens);
+  res.json(tokens);
+});
 
 // === ROUTE 1: Exchange code for tokens ===
 app.post("/store-refresh-token", async (req, res) => {
@@ -30,7 +53,8 @@ app.post("/store-refresh-token", async (req, res) => {
     functions.logger.info("Tokens acquired:", tokens);
 
     res.status(200).json({ message: "Token exchange successful", tokens });
-  } catch (err) {
+  }
+  catch (err) {
     console.error("Error exchanging code:", err);
     res.status(500).json({ error: "Token exchange failed", details: err.message });
   }
@@ -58,7 +82,8 @@ app.post("/create-google-event", async (req, res) => {
     });
 
     res.status(200).json({ message: "Event created", eventId: response.data.id });
-  } catch (err) {
+  }
+  catch (err) {
     console.error("Failed to create Google Calendar event:", err);
     res.status(500).json({ error: "Event creation failed", details: err.message });
   }
@@ -67,14 +92,14 @@ app.post("/create-google-event", async (req, res) => {
 // === ROUTE 3: Get Google Emails (Gmail API) ===
 app.post("/get-google-emails", async (req, res) => {
 //  const authHeader = req.headers.authorization;
- // const access_token = /* authHeader ? authHeader.split(" ")[1]  :*/ req.body.access_token;
- const access_token = JSON.parse(req.body.access_token).currentUser.stsTokenManager.accessToken;
+  // const access_token = /* authHeader ? authHeader.split(" ")[1]  :*/ req.body.access_token;
+  const access_token = JSON.parse(req.body.access_token).currentUser.stsTokenManager.accessToken;
 
   if (!access_token) return res.status(400).json({ error: "Missing access token" });
 
   const gmailAuth = new google.auth.OAuth2();
   gmailAuth.setCredentials({ access_token });
- // gmailAuth.setCredentials(access_token);
+  // gmailAuth.setCredentials(access_token);
 
   const gmail = google.gmail({ version: "v1", auth: gmailAuth });
 
@@ -93,8 +118,7 @@ app.post("/get-google-emails", async (req, res) => {
         const from = headers.find(h => h.name === "From")?.value || "";
         const snippet = fullMessage.data.snippet;
         const date = headers.find(h => h.name === "Date")?.value || "";
-        
-        
+
 
         return {
           id: msg.id,
@@ -107,10 +131,13 @@ app.post("/get-google-emails", async (req, res) => {
     );
 
     res.status(200).json({ emails: emailData });
-  } catch (err) {
+  }
+  catch (err) {
     console.error("Error fetching Gmail messages:", err);
     res.status(500).json({ error: "Failed to fetch Gmail messages", details: err.message });
   }
 });
 
-exports.api = functions.https.onRequest(app);
+app.listen(serverPort, () => {
+  console.log(`Server is running on http://localhost:${ serverPort }`);
+});
