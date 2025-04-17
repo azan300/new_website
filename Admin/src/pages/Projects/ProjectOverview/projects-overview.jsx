@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { doc, getDoc } from "firebase/firestore";
-import { db } from "../../Firebase/firebaseConfig"; // Adjust path if needed
+import { db } from "../../../Firebase/firebaseConfig"; // Adjust path if needed
 import { Col, Container, Row } from "reactstrap";
 import { isEmpty } from "lodash";
 

@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import Dropzone from "react-dropzone";
 import { Button, Card, CardBody, Col, Container, Form, FormFeedback, Input, Label, Row, UncontrolledTooltip } from "reactstrap";
-import { db } from "../..Firebase/'firebaseCongif";
+import { db } from "../../Firebase/firebaseConfig";
 import { collection, addDoc, Timestamp } from "firebase/firestore";
 
 //Import Breadcrumb
