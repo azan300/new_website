@@ -4,7 +4,9 @@ const cors = require("cors");
 const { google } = require("googleapis");
 const oauth2Client = require("./utils/oauth2Client");
 const gmailRoutes = require("./routes/gmailRoutes");
+const chatRoutes = require("./routes/chatRoutes");
 const { serverPort } = require("./config");
+
 
 const app = express();
 app.use(cors({ origin: true }));
@@ -14,8 +16,8 @@ app.use(express.json()); // to parse JSON request bodies
 app.use((req, res, next) => {
   // For demo purposes, use hardcoded token
   req.token = {
-    access_token: '',
-    refresh_token: ''
+    "access_token": "",
+    "refresh_token": "",
   };
   next();
 });
@@ -23,9 +25,20 @@ app.use((req, res, next) => {
 // Gmail Routes
 app.use("/gmail", gmailRoutes);
 
+// Chat Routes
+app.use("/chat", chatRoutes);
+
+
 // Auth URL
 app.get("/auth", (req, res) => {
-  const scopes = ["https://www.googleapis.com/auth/gmail.readonly", "https://www.googleapis.com/auth/gmail.send"];
+  const scopes = [
+    "https://www.googleapis.com/auth/chat.messages",  // to read messages
+    "https://www.googleapis.com/auth/chat.spaces",
+    "https://www.googleapis.com/auth/gmail.readonly",
+    "https://www.googleapis.com/auth/gmail.send",
+    "https://www.googleapis.com/auth/chat.bot",
+    "https://www.googleapis.com/auth/chat.spaces.readonly"
+    ];
   const url = oauth2Client.generateAuthUrl({
     access_type: "offline",
     scope: scopes,
