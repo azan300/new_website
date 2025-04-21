@@ -5,6 +5,8 @@ const { google } = require("googleapis");
 const oauth2Client = require("./utils/oauth2Client");
 const gmailRoutes = require("./routes/gmailRoutes");
 const chatRoutes = require("./routes/chatRoutes");
+const calendarRoutes = require("./routes/calendarRoutes");
+
 const { serverPort } = require("./config");
 
 
@@ -16,9 +18,7 @@ app.use(express.json()); // to parse JSON request bodies
 app.use((req, res, next) => {
   // For demo purposes, use hardcoded token
   req.token = {
-    "access_token": "",
-    "refresh_token": "",
-  };
+     };
   next();
 });
 
@@ -28,6 +28,8 @@ app.use("/gmail", gmailRoutes);
 // Chat Routes
 app.use("/chat", chatRoutes);
 
+app.use("/calendar", calendarRoutes);
+
 
 // Auth URL
 app.get("/auth", (req, res) => {
@@ -36,9 +38,9 @@ app.get("/auth", (req, res) => {
     "https://www.googleapis.com/auth/chat.spaces",
     "https://www.googleapis.com/auth/gmail.readonly",
     "https://www.googleapis.com/auth/gmail.send",
-    "https://www.googleapis.com/auth/chat.bot",
-    "https://www.googleapis.com/auth/chat.spaces.readonly"
-    ];
+    "https://www.googleapis.com/auth/chat.spaces.readonly",
+    "https://www.googleapis.com/auth/calendar"
+  ];
   const url = oauth2Client.generateAuthUrl({
     access_type: "offline",
     scope: scopes,
