@@ -6,21 +6,18 @@ const oauth2Client = require("./utils/oauth2Client");
 const gmailRoutes = require("./routes/gmailRoutes");
 const chatRoutes = require("./routes/chatRoutes");
 const calendarRoutes = require("./routes/calendarRoutes");
+const morgan = require("morgan");
+const { db } = require("./utils/firebase");
+const url = require("node:url");
 
 const { serverPort } = require("./config");
 
 
 const app = express();
+
+app.use(morgan("dev"));
 app.use(cors({ origin: true }));
 app.use(express.json()); // to parse JSON request bodies
-
-// // Auth simulation middleware (replace with real token management)
-app.use((req, res, next) => {
-  // For demo purposes, use hardcoded token
-  req.token = {
-     };
-  next();
-});
 
 // Gmail Routes
 app.use("/gmail", gmailRoutes);
@@ -30,7 +27,6 @@ app.use("/chat", chatRoutes);
 
 app.use("/calendar", calendarRoutes);
 
-
 // Auth URL
 app.get("/auth", (req, res) => {
   const scopes = [
@@ -39,7 +35,13 @@ app.get("/auth", (req, res) => {
     "https://www.googleapis.com/auth/gmail.readonly",
     "https://www.googleapis.com/auth/gmail.send",
     "https://www.googleapis.com/auth/chat.spaces.readonly",
-    "https://www.googleapis.com/auth/calendar"
+    "https://www.googleapis.com/auth/calendar",
+    "profile",
+    "email",
+    'https://www.googleapis.com/auth/directory.readonly',
+    "https://www.googleapis.com/auth/admin.directory.user.readonly", //add manually and add admin sdk permission
+    "https://www.googleapis.com/auth/userinfo.email",
+    "https://www.googleapis.com/auth/userinfo.profile"
   ];
   const url = oauth2Client.generateAuthUrl({
     access_type: "offline",
@@ -48,13 +50,37 @@ app.get("/auth", (req, res) => {
   res.redirect(url);
 });
 
+app.get("/auth/me/:id", async (req, res) => {
+  try {
+    const detail = await db.collection("users").doc(req.params.id).get();
+    const { id_token, access_token,scope,  ...rest } = detail.data();
+
+    res.status(200).send({ success: true, detail: rest })
+  }
+  catch (e) {
+    res.status(500).send({ error: e });
+  }
+})
+
 // OAuth2 Callback
 app.get("/oauth2callback", async (req, res) => {
   const { code } = req.query;
   const { tokens } = await oauth2Client.getToken(code);
   // For now, just print token. You'd store this in DB/session in real app
   console.log("Tokens:", tokens);
-  res.json(tokens);
+  oauth2Client.setCredentials(tokens);
+  const oauth2 = google.oauth2({version: 'v2', auth: oauth2Client});
+  const userInfo = await oauth2.userinfo.get();
+
+  // Now you have the user's Google profile
+  console.log("User email:", userInfo.data.email);
+  console.log("User ID:", userInfo.data.id);
+
+  await db.collection('users').doc(userInfo.data.id).set({
+    ...userInfo.data, ...tokens
+  });
+
+  res.redirect(`http://localhost:5173/login?id=${userInfo.data.id}`);
 });
 
 // === ROUTE 1: Exchange code for tokens ===

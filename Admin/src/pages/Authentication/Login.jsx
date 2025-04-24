@@ -1,42 +1,46 @@
-import React from "react";
+import React, {useEffect} from "react";
 import PropTypes from "prop-types";
-import { Link } from "react-router-dom";
+import {Link, useNavigate, useSearchParams} from "react-router-dom";
 import withRouter from "../../components/Common/withRouter";
 
 // Google Authentication
-import { signInWithGoogle } from "../../Firebase/firebaseConfig";
+import {signInWithGoogle} from "../../Firebase/firebaseConfig";
 
 // Redux
-import { useSelector, useDispatch } from "react-redux";
-import { createSelector } from "reselect";
+import {useDispatch, useSelector} from "react-redux";
+import {createSelector} from "reselect";
 
 // Formik validation
 import * as Yup from "yup";
-import { useFormik } from "formik";
+import {useFormik} from "formik";
 
-import {
-  Row,
-  Col,
-  CardBody,
-  Card,
-  Alert,
-  Container,
-  Form,
-  Input,
-  FormFeedback,
-  Label,
-} from "reactstrap";
+import {Alert, Card, CardBody, Col, Container, Form, FormFeedback, Input, Label, Row,} from "reactstrap";
 
 // Actions
-import { loginUser } from "/src/store/actions";
+import {loginUser} from "/src/store/actions";
 
 // Import images
 import profile from "../../assets/images/profile-img.png";
 import logo from "../../assets/images/logo.svg";
 import lightlogo from "../../assets/images/logo-light.svg";
+import {get} from "../../helpers/api_helper.jsx";
 
 const Login = (props) => {
   // Meta title
+  const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    (async () => {
+      let id = searchParams.get("id");
+      if (id) {
+        let authDetail = await get(`/auth/me/${id}`)
+        localStorage.setItem("authUser", JSON.stringify(authDetail.detail))
+        navigate("/dashboard")
+      }
+    })()
+  }, [searchParams]);
+
   document.title = "Login - Vite React Admin & Dashboard Template";
   const dispatch = useDispatch();
 
@@ -71,11 +75,11 @@ const Login = (props) => {
       const user = await signInWithGoogle();
       console.log("User Signed In:", user);
 
-      // Store user info (can be Redux or LocalStorage)
-      localStorage.setItem("authUser", JSON.stringify(user));
-
-      // Redirect user to dashboard
-      props.router.navigate("/dashboard");
+      // // Store user info (can be Redux or LocalStorage)
+      // localStorage.setItem("authUser", JSON.stringify(user));
+      //
+      // // Redirect user to dashboard
+      // props.router.navigate("/dashboard");
     } catch (error) {
       console.error("Google Sign-In Error:", error);
     }

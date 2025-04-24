@@ -13,7 +13,7 @@ exports.getSpaces = async (req, res) => {
 
 exports.getMessages = async (req, res) => {
   try {
-    const spaceId = req.params.spaceId;
+    const spaceId = req.query.spaceId;
     const messages = await listMessages(req.token, spaceId);
     res.json(messages);
   }

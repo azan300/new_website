@@ -1,8 +1,9 @@
 const express = require("express");
 const router = express.Router();
 const calendarController = require("../controllers/calendarController");
+const {validateIdentifier} = require("../middleware/token");
 
-router.post('/event', calendarController.addEvent);
+router.post('/event',validateIdentifier, calendarController.addEvent);
 
 router.get('/events', calendarController.getEvents);
 

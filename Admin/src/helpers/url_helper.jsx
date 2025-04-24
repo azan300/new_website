@@ -27,10 +27,10 @@ export const STARED_MAIL = "/stared/mail";
 export const GET_MAILS_ID = "/mail:id"
 
 //CALENDER
-export const GET_EVENTS = "/events";
-export const ADD_NEW_EVENT = "/add/event";
-export const UPDATE_EVENT = "/update/event";
-export const DELETE_EVENT = "/delete/event";
+export const GET_EVENTS = "/calendar/firestore/events";
+export const ADD_NEW_EVENT = "/calendar/firestore/events";
+export const UPDATE_EVENT = "/calendar/firestore/events";
+export const DELETE_EVENT = "/calendar/firestore/events/";
 export const GET_CATEGORIES = "/categories";
 
 //CHATS

@@ -1,25 +1,21 @@
-import React, { useState, useEffect } from "react";
+import React, {useEffect, useState} from "react";
 import PropTypes from "prop-types";
-import {
-  Dropdown,
-  DropdownToggle,
-  DropdownMenu,
-  DropdownItem,
-} from "reactstrap";
+import {Dropdown, DropdownItem, DropdownMenu, DropdownToggle,} from "reactstrap";
 
 //i18n
-import { withTranslation } from "react-i18next";
+import {withTranslation} from "react-i18next";
 
 // Redux
-import { connect } from "react-redux";
-import { Link } from "react-router-dom";
+import {connect} from "react-redux";
+import {Link, useParams, useSearchParams} from "react-router-dom";
 import withRouter from "../../Common/withRouter";
 
 // users
-import user1 from "../../../assets/images/users/avatar-1.jpg";
+import {get} from "../../../helpers/api_helper.jsx";
 
 const ProfileMenu = (props) => {
   // Declare a new state variable, which we'll call "menu"
+  const [searchParams, setSearchParams] = useSearchParams();
   const [menu, setMenu] = useState(false);
 
   const [username, setusername] = useState("Admin");
@@ -27,8 +23,21 @@ const ProfileMenu = (props) => {
   useEffect(() => {
     if (localStorage.getItem("authUser")) {
       if (import.meta.env.VITE_APP_DEFAULTAUTH === "firebase") {
-        const obj = JSON.parse(localStorage.getItem("authUser"));
-        setusername(obj.email);
+        (async () => {
+          let userId = searchParams.get("id");
+          if (!userId) {
+            userId = localStorage.getItem("userId");
+          }
+          let authDetail = localStorage.getItem("authUser");
+          console.log(!authDetail)
+          if (!authDetail) {
+            authDetail = await get(`/auth/me/${userId}`)
+            localStorage.setItem("authUser", JSON.stringify(authDetail.detail))
+          } else {
+            authDetail = JSON.parse(authDetail)
+          };
+          setusername(authDetail.email);
+        })()
       } else if (
         import.meta.env.VITE_APP_DEFAULTAUTH === "fake" ||
         import.meta.env.VITE_APP_DEFAULTAUTH === "jwt"
@@ -52,14 +61,14 @@ const ProfileMenu = (props) => {
           tag="button"
         >
           <div
-  className="rounded-circle"
-  style={{
-    width: "36px",
-    height: "36px",
-    backgroundColor: "black",
-    display: "inline-block"
-  }}
-></div>
+            className="rounded-circle"
+            style={{
+              width: "36px",
+              height: "36px",
+              backgroundColor: "black",
+              display: "inline-block"
+            }}
+          ></div>
           <span className="d-none d-xl-inline-block ms-2 me-1">{username}</span>
           <i className="mdi mdi-chevron-down d-none d-xl-inline-block" />
         </DropdownToggle>

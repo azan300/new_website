@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from "react";
+import React, {useEffect, useState} from "react";
 import PropTypes from "prop-types";
-import { isEmpty } from "lodash";
+import {isEmpty} from "lodash";
 
 import {
   Button,
@@ -18,19 +18,13 @@ import {
   Row,
 } from "reactstrap";
 import * as Yup from "yup";
-import { useFormik } from "formik";
-
-const CLIENT_ID = "602714767093-hulo8d18n3t9i9qa9fal0d4afl74iods.apps.googleusercontent.com";
-const SCOPES = "https://www.googleapis.com/auth/calendar";
-
+import {useFormik} from "formik";
 //Import Breadcrumb
 import Breadcrumbs from "/src/components/Common/Breadcrumb";
 
 import {
   addNewEvent as onAddNewEvent,
   deleteEvent as onDeleteEvent,
-  getCategories as onGetCategories,
-  getEvents as onGetEvents,
   updateEvent as onUpdateEvent,
 } from "/src/store/actions";
 
@@ -40,16 +34,20 @@ import DeleteModal from "./DeleteModal";
 import verification from "../../assets/images/verification-img.png";
 
 //redux
-import { useSelector, useDispatch } from "react-redux";
-import { createSelector } from "reselect";
+import {useDispatch, useSelector} from "react-redux";
+import {createSelector} from "reselect";
 
 // import "@fullcalendar/react/dist/vdom";
 import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
-import interactionPlugin, { Draggable } from "@fullcalendar/interaction";
+import interactionPlugin, {Draggable} from "@fullcalendar/interaction";
 import BootstrapTheme from "@fullcalendar/bootstrap";
 import listPlugin from '@fullcalendar/list';
 import allLocales from '@fullcalendar/core/locales-all';
+import {get, post} from "../../helpers/api_helper.jsx";
+
+const CLIENT_ID = "602714767093-hulo8d18n3t9i9qa9fal0d4afl74iods.apps.googleusercontent.com";
+const SCOPES = "https://www.googleapis.com/auth/calendar";
 
 const Calender = (props) => {
   //meta title
@@ -61,21 +59,24 @@ const Calender = (props) => {
   const [isEdit, setIsEdit] = useState(false);
 
   const [accessToken, setAccessToken] = useState(null);
-  
+
   const categoryValidation = useFormik({
-    // enableReinitialize : use this flag when initial values needs to be changed
     enableReinitialize: true,
 
     initialValues: {
       title: (event && event.title) || '',
-      category: (event && event.category) || '',
+      // category: (event && event.category) || '',
+      startDate: (event && event.startDate) || '',
+      endDate: (event && event.endDate) || '',
     },
     validationSchema: Yup.object({
       title: Yup.string().required("Please Enter Your Event Name"),
-      category: Yup.string().required("Please Enter Your Billing Name"),
+      // category: Yup.string().required("Please Enter Your Billing Name"),
+      startDate: Yup.date().required("Please Enter Your Start Date"),
+      endDate: Yup.date().required("Please Enter Your End Date"),
     }),
-    onSubmit: (values) => {
-      if (isEdit) { 
+    onSubmit: async (values) => {
+      if (isEdit) {
         const updateEvent = {
           id: event.id,
           title: values.title,
@@ -86,43 +87,29 @@ const Calender = (props) => {
         dispatch(onUpdateEvent(updateEvent));
         categoryValidation.resetForm();
       } else {
-        const newEvent = {
-          id: Math.floor(Math.random() * 100),
-          title: values["title"],
-          start: selectedDay ? selectedDay.date : new Date(),
-          className: values['category']
-            ? values['category'] + " text-white"
-            : "bg-primary text-white"
-          ,
-        };
-        // save new event
-        dispatch(onAddNewEvent(newEvent));
-        categoryValidation.resetForm()
-
-        if (accessToken) {
-          const calendarEvent = {
-            title: newEvent.title,
-            start: newEvent.start.toISOString(),
-            end: new Date(newEvent.start.getTime() + 60 * 60 * 1000).toISOString(), // 1hr event
+        let authUser = localStorage.getItem("authUser");
+        if (authUser) {
+          authUser = JSON.parse(authUser);
+          const newEvent = {
+            events: [
+              {
+                summary: values.title,
+                start: {
+                  dateTime: new Date(values.startDate).toISOString(),
+                },
+                end: {
+                  dateTime: new Date(values.endDate).toISOString(),
+                }
+              }
+            ],
+            userId: authUser.id
           };
-      
-          fetch("/api/create-google-event", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              access_token: accessToken,
-              event: calendarEvent,
-            }),
-          })
-            .then(res => res.json())
-            .then(data => {
-              console.log("Google Calendar event created:", data);
-            })
-            .catch(err => {
-              console.error("Failed to create Google Calendar event:", err);
-            });
+
+          const res = await post(`/calendar/event?id=${newEvent.userId}`, newEvent.events[0])
+          newEvent.events[0]["eventId"] = res.id
+          await post(`/calendar/firestore/events`, newEvent)
+
+          categoryValidation.resetForm()
         }
       }
       toggle();
@@ -138,7 +125,6 @@ const Calender = (props) => {
   );
 
   const {
-    events,
     categories
   } = useSelector(CalendarProperties);
 
@@ -146,13 +132,39 @@ const Calender = (props) => {
   const [deleteModal, setDeleteModal] = useState(false);
   const [modalCategory, setModalCategory] = useState(false);
   const [selectedDay, setSelectedDay] = useState(0);
+  const [events, setEvents] = useState([]);
+
+  const handleDatesSet = async (arg) => {
+    const date = {
+      start: arg.start,
+      end: arg.end
+    }
+    let authUser = localStorage.getItem("authUser");
+    if (authUser) {
+      authUser = JSON.parse(authUser);
+      const eventTemp = await get(`/calendar/firestore/events?startTime=${date.start.toISOString()}&endTime=${date.end.toISOString()}&userId=${authUser.id}`);
+      setEvents(eventTemp);
+    }
+  };
+
 
   useEffect(() => {
-    dispatch(onGetCategories());
-    dispatch(onGetEvents());
-    new Draggable(document.getElementById("external-events"), {
-      itemSelector: ".external-event",
-    });
+    // dispatch(onGetCategories());
+    (async () => {
+      let authUser = localStorage.getItem("authUser");
+      if (authUser) {
+        authUser = JSON.parse(authUser);
+        const date = new Date();
+        const firstDay = new Date(date.getFullYear(), date.getMonth(), 1);
+        const lastDay = new Date(date.getFullYear(), date.getMonth() + 1, 0);
+
+        const eventTemp = await get(`/calendar/firestore/events?startTime=${firstDay.toISOString()}&endTime=${lastDay.toISOString()}&userId=${authUser.id}`);
+        setEvents(eventTemp);
+        new Draggable(document.getElementById("external-events"), {
+          itemSelector: ".external-event",
+        });
+      }
+    })()
   }, [dispatch]);
 
   useEffect(() => {
@@ -169,7 +181,7 @@ const Calender = (props) => {
       console.error("Google Identity Services SDK not loaded.");
       return;
     }
-  
+
     const tokenClient = window.google.accounts.oauth2.initCodeClient({
       client_id: CLIENT_ID,
       scope: SCOPES,
@@ -183,22 +195,22 @@ const Calender = (props) => {
             },
             body: JSON.stringify({ code: response.code }),
           })
-          .then(res => res.json())
-          .then(data => {
-            console.log("Refresh token exchange success:", data);
-            setAccessToken(data.tokens.access_token);
-            alert("Google Calendar sync is now enabled.");
-          })
-          .catch(err => {
-            console.error("Token exchange failed", err);
-          });
+            .then(res => res.json())
+            .then(data => {
+              console.log("Refresh token exchange success:", data);
+              setAccessToken(data.tokens.access_token);
+              alert("Google Calendar sync is now enabled.");
+            })
+            .catch(err => {
+              console.error("Token exchange failed", err);
+            });
         }
       },
     });
-  
+
     tokenClient.requestCode();
   };
-  
+
 
 
   /**
@@ -331,6 +343,7 @@ const Calender = (props) => {
     "navLinkHint": "Go to $0"
   };
   const [isLocal, setIsLocal] = useState(enLocal);
+  const [currentView, setCurrentView] = useState('dayGridMonth');
   const handleChangeLocals = (value) => {
     setIsLocal(value);
   };
@@ -413,10 +426,10 @@ const Calender = (props) => {
                   <Card>
                     <CardBody>
 
-                    < Button color="secondary" className="mb-3" onClick={handleGoogleSync}>
-                          Sync with Google Calendar
-                        </Button>
-                        
+                      < Button color="secondary" className="mb-3" onClick={handleGoogleSync}>
+                        Sync with Google Calendar
+                      </Button>
+
                       <FullCalendar
                         plugins={[
                           BootstrapTheme,
@@ -429,6 +442,10 @@ const Calender = (props) => {
                         handleWindowResize={true}
                         themeSystem="bootstrap"
                         locale={isLocal}
+                        viewDidMount={(arg) => {
+                          setCurrentView(arg.type);
+                        }}
+                        datesSet={handleDatesSet}
                         headerToolbar={{
                           left: "prev,next today",
                           center: "title",
@@ -438,11 +455,12 @@ const Calender = (props) => {
                         editable={true}
                         droppable={true}
                         selectable={true}
+
                         dateClick={handleDateClick}
                         eventClick={handleEventClick}
                         drop={onDrop}
                       />
-                      
+
                     </CardBody>
                   </Card>
                   <Modal
@@ -481,31 +499,65 @@ const Calender = (props) => {
                               ) : null}
                             </div>
                           </Col>
-                          <Col className="col-12">
-                            <div className="mb-3">
-                              <Label>Category</Label>
-                              <Input
-                                type="select"
-                                name="category"
-                                placeholder="All Day Event"
-                                onChange={categoryValidation.handleChange}
-                                onBlur={categoryValidation.handleBlur}
-                                value={categoryValidation.values.category || ""}
-                                invalid={
-                                  categoryValidation.touched.category && categoryValidation.errors.category ? true : false
-                                }
-                              >
-                                <option value="bg-danger">Danger</option>
-                                <option value="bg-success">Success</option>
-                                <option value="bg-primary">Primary</option>
-                                <option value="bg-info">Info</option>
-                                <option value="bg-dark">Dark</option>
-                                <option value="bg-warning">Warning</option>
-                              </Input>
-                              {categoryValidation.touched.category && categoryValidation.errors.category ? (
-                                <FormFeedback type="invalid">{categoryValidation.errors.category}</FormFeedback>
-                              ) : null}
-                            </div>
+                          {/*<Col className="col-12">*/}
+                          {/*  <div className="mb-3">*/}
+                          {/*    <Label>Category</Label>*/}
+                          {/*    <Input*/}
+                          {/*      type="select"*/}
+                          {/*      name="category"*/}
+                          {/*      placeholder="All Day Event"*/}
+                          {/*      onChange={categoryValidation.handleChange}*/}
+                          {/*      onBlur={categoryValidation.handleBlur}*/}
+                          {/*      value={categoryValidation.values.category || ""}*/}
+                          {/*      invalid={*/}
+                          {/*        categoryValidation.touched.category && categoryValidation.errors.category ? true : false*/}
+                          {/*      }*/}
+                          {/*    >*/}
+                          {/*      <option value="bg-danger">Danger</option>*/}
+                          {/*      <option value="bg-success">Success</option>*/}
+                          {/*      <option value="bg-primary">Primary</option>*/}
+                          {/*      <option value="bg-info">Info</option>*/}
+                          {/*      <option value="bg-dark">Dark</option>*/}
+                          {/*      <option value="bg-warning">Warning</option>*/}
+                          {/*    </Input>*/}
+                          {/*    {categoryValidation.touched.category && categoryValidation.errors.category ? (*/}
+                          {/*      <FormFeedback type="invalid">{categoryValidation.errors.category}</FormFeedback>*/}
+                          {/*    ) : null}*/}
+                          {/*  </div>*/}
+                          {/*</Col>*/}
+                          <Col className={"col-12 mb-3"}>
+                            <Label>Start Date</Label>
+                            <Input
+                              name={"startDate"}
+                              aria-label="Date and time"
+                              type="datetime-local"
+                              onChange={categoryValidation.handleChange}
+                              onBlur={categoryValidation.handleBlur}
+                              value={categoryValidation.values.startDate || ""}
+                              invalid={
+                                categoryValidation.touched.startDate && categoryValidation.errors.startDate ? true : false
+                              }
+                            />
+                            {categoryValidation.touched.startDate && categoryValidation.errors.startDate ? (
+                              <FormFeedback type="invalid">{categoryValidation.errors.startDate}</FormFeedback>
+                            ) : null}
+                          </Col>
+                          <Col className={"col-12 mb-3"}>
+                            <Label>End Date</Label>
+                            <Input
+                              name={"endDate"}
+                              aria-label="Date and time"
+                              type="datetime-local"
+                              onChange={categoryValidation.handleChange}
+                              onBlur={categoryValidation.handleBlur}
+                              value={categoryValidation.values.endDate || ""}
+                              invalid={
+                                categoryValidation.touched.endDate && categoryValidation.errors.endDate ? true : false
+                              }
+                            />
+                            {categoryValidation.touched.endDate && categoryValidation.errors.endDate ? (
+                              <FormFeedback type="invalid">{categoryValidation.errors.endDate}</FormFeedback>
+                            ) : null}
                           </Col>
                         </Row>
 

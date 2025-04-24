@@ -7,7 +7,7 @@ module.exports = {
     GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET,
     GOOGLE_REDIRECT_URI: process.env.GOOGLE_REDIRECT_URI
   },
-  serverPort: process.env.PORT || 5000,
+  serverPort: process.env.PORT || 4000,
   firebase:{
     apiKey: process.env.FIREBASE_API_KEY,
     appDomain: process.env.FIREBASE_APP_DOMAIN,

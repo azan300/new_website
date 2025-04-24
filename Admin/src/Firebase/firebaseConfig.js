@@ -1,6 +1,6 @@
 // Import Firebase modules
 import { initializeApp } from "firebase/app";
-import { getAuth, GoogleAuthProvider, signInWithPopup, signOut } from "firebase/auth";
+import { getAuth, GoogleAuthProvider, signOut } from "firebase/auth";
 import { getFirestore } from "firebase/firestore"; // <-- Add this
 
 // Firebase Configuration
@@ -24,10 +24,12 @@ const googleProvider = new GoogleAuthProvider();
 // Google Sign-In Function
 const signInWithGoogle = async () => {
   try {
-    const result = await signInWithPopup(auth, googleProvider);
-    console.log("User Info:", result);
-    localStorage.setItem('auth', JSON.stringify(result.user.auth));
-    return result.user;
+    window.location.replace("http://localhost:5000/auth");
+
+    // const result = await signInWithPopup(auth, googleProvider);
+    // console.log("User Info:", result);
+    // localStorage.setItem('auth', JSON.stringify(result.user.auth));
+    // return result.user;
   } catch (error) {
     console.error("Google Sign-In Error:", error.message);
   }

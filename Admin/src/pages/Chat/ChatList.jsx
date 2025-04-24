@@ -1,16 +1,24 @@
-import React, { useEffect, useState } from "react";
+import React, {useEffect, useState} from "react";
 import {
-  Dropdown, DropdownItem, DropdownMenu, DropdownToggle,
-  Input, Nav, NavItem, NavLink, TabContent, TabPane
+  Dropdown,
+  DropdownItem,
+  DropdownMenu,
+  DropdownToggle,
+  Input,
+  Nav,
+  NavItem,
+  NavLink,
+  TabContent,
+  TabPane
 } from "reactstrap";
-import { Link } from "react-router-dom";
+import {Link} from "react-router-dom";
 import SimpleBar from "simplebar-react";
 import classnames from "classnames";
 
 // Image
 import avatar1 from "../../assets/images/users/avatar-1.jpg";
 import Spinners from "../../components/Common/Spinner";
-import axios from "axios";
+import {get} from "../../helpers/api_helper.jsx";
 
 const ChatList = ({ userChatOpen, currentRoomId }) => {
   const [menu1, setMenu1] = useState(false);
@@ -26,16 +34,13 @@ const ChatList = ({ userChatOpen, currentRoomId }) => {
   useEffect(() => {
     const fetchChatThreads = async () => {
       try {
-        const tokenRes = await axios.get("/api/get-access-token");
-        const accessToken = tokenRes.data.access_token;
+        let authUser = localStorage.getItem("authUser");
+        if (authUser) {
+          authUser = JSON.parse(authUser);
+          const res = await get(`/chat/spaces?id=${authUser.id}`);
+          setChatThreads(res || []);
 
-        const res = await axios.post("/api/get-google-chat-threads", {}, {
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-          }
-        });
-
-        setChatThreads(res.data.threads || []);
+        }
       } catch (error) {
         console.error("Failed to fetch chat threads:", error);
       } finally {

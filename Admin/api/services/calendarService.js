@@ -78,13 +78,25 @@ async function addTasksToFirestore(events, userId) {
 async function getEventsByDateRangeFirestore(startDate, endDate, userId) {
   const snapshot = await db.collection('calendarEvents')
     .where('userId', '==', userId)
-    .where('start', '>=', startDate)
-    .where('start', '<=', endDate)
     .get();
+
+  const start = new Date(startDate);
+  const end = new Date(endDate);
 
   const events = [];
   snapshot.forEach(doc => {
-    events.push({ id: doc.id, ...doc.data() });
+    const eventData = doc.data();
+    const eventStart = new Date(eventData.start.dateTime);
+    const eventEnd = new Date(eventData.end.dateTime);
+    if (eventStart >= start && eventStart <= end) {
+      events.push({
+        id: doc.id,
+        ...eventData,
+        title: eventData.summary,
+        start: eventStart,
+        end: eventEnd,
+      });
+    }
   });
 
   return events;

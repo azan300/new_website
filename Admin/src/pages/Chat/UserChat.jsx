@@ -1,7 +1,8 @@
-import React, { useEffect, useRef, useState } from "react";
-import { Button, Card, Col, Input, Row } from "reactstrap";
+import React, {useEffect, useRef, useState} from "react";
+import {Button, Card, Col, Input, Row} from "reactstrap";
 import SimpleBar from "simplebar-react";
 import Spinners from "../../components/Common/Spinner";
+import {get, post} from "../../helpers/api_helper.jsx";
 
 const UserChat = ({ Chat_Box_Username, Chat_Box_User_Status }) => {
   const scrollRef = useRef(null);
@@ -13,36 +14,45 @@ const UserChat = ({ Chat_Box_Username, Chat_Box_User_Status }) => {
 
   // Fetch messages from Google Chat API
   useEffect(() => {
-    const fetchGoogleChatMessages = async () => {
-      try {
-        // Replace with your backend endpoint to call Google Chat API
-        const res = await fetch("/api/get-google-chat-messages");
-        const data = await res.json();
-        setMessages(data.messages || []);
-      } catch (err) {
-        console.error("Failed to fetch Google Chat messages:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
+
 
     fetchGoogleChatMessages();
-  }, []);
+  }, [Chat_Box_Username]);
+
+  const fetchGoogleChatMessages = async () => {
+    try {
+      setLoading(true);
+      let authUser = localStorage.getItem("authUser");
+      if (authUser) {
+        authUser = JSON.parse(authUser);
+        const res = await get(`/chat/messages?spaceId=${Chat_Box_Username}&id=${authUser.id}`);
+        setMessages(res || []);
+      }
+    } catch (err) {
+      console.error("Failed to load Google Chat messages:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const sendMessage = async () => {
     if (!curMessage) return;
     try {
-      setDisable(true);
+      let authUser = localStorage.getItem("authUser");
 
-      // Replace with your backend API to send messages
-      await fetch("/api/send-google-chat-message", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: curMessage }),
-      });
+      if (authUser) {
+        authUser = JSON.parse(authUser);
+        setDisable(true);
+        await post(`chat/message?id=${authUser.id}`, {
+          "spaceId": Chat_Box_Username, "text": curMessage
+        })
 
-      setCurMessage("");
-      setDisable(false);
+        setCurMessage("");
+        setDisable(false);
+        await fetchGoogleChatMessages();
+      } else {
+        return Error("Not logged in!");
+      }
     } catch (err) {
       console.error("Error sending message:", err);
     }
@@ -76,17 +86,27 @@ const UserChat = ({ Chat_Box_Username, Chat_Box_User_Status }) => {
               <Spinners setLoading={setLoading} />
             ) : (
               <ul className="list-unstyled" id="users-conversation">
-                {messages.map((msg, idx) => (
-                  <li key={idx} className={msg.sender === "me" ? "right" : ""}>
+                {messages.map((msg, idx) => {
+                  let authUser = localStorage.getItem("authUser");
+                  if (authUser) {
+                    authUser = JSON.parse(authUser);
+                  }
+                  return <li key={idx} className={msg.sender.name === `users/${authUser.id}` ? "right" : ""}>
                     <div className="conversation-list">
                       <div className="ctext-wrap">
-                        <div className="conversation-name">{msg.sender}</div>
-                        <p>{msg.text}</p>
-                        <p className="chat-time mb-0">{msg.timestamp}</p>
+                        <div className="conversation-name">{msg.sender.name}</div>
+                        {msg.attachment ? <div style={{
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: "10px",
+                        }}> {msg.attachment.map((element, idx) => {
+                          return (<img key={idx} src={element.thumbnailUri} alt={element.name}/>)
+                        })}</div> : <p>{msg.text}</p>}
+                        <p className="chat-time mb-0">{new Date(msg.createTime).toLocaleString()}</p>
                       </div>
                     </div>
                   </li>
-                ))}
+                })}
               </ul>
             )}
           </SimpleBar>
