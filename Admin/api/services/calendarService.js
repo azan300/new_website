@@ -17,6 +17,93 @@ async function createEvent(token, eventData) {
   return res.data;
 }
 
+async function getUnsyncedEvents(userId) {
+  try {
+    const snapshot = await db.collection('calendarEvents')
+      .where('userId', '==', userId)
+      .where('eventId', '==', null)
+      .get();
+
+    if (snapshot.empty) {
+      console.log('No unsynced events found for user:', userId);
+      return [];
+    }
+
+    return snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
+
+  }
+  catch (error) {
+    console.error('Error fetching unsynced events:', error);
+    throw new Error('Failed to retrieve unsynced events');
+  }
+}
+
+// Create Event
+async function syncEvent(token) {
+  try {
+    // Get all unsynced events
+    const unsyncedEvents = await getUnsyncedEvents(token.id);
+
+    if (unsyncedEvents.length === 0) {
+      return { success: true, message: 'No events to sync' };
+    }
+
+    const calendar = await getCalendarClient(token);
+    const batch = db.batch();
+    const results = [];
+console.log(unsyncedEvents)
+    for (const event of unsyncedEvents) {
+      try {
+        const googleEvent = {
+          summary: event.summary,
+          description: event.description || '',
+          start: { dateTime: event.start.dateTime, timeZone: 'UTC' },
+          end: { dateTime: event.end.dateTime, timeZone: 'UTC' }
+        };
+
+        const res = await calendar.events.insert({
+          calendarId: 'primary',
+          resource: googleEvent
+        });
+        console.log(res, '**************')
+
+        batch.update(db.collection('calendarEvents').doc(event.id), {
+          eventId: res.data.id,
+        });
+
+        results.push({
+          firestoreId: event.id,
+          googleEventId: res.data.id,
+          status: 'success'
+        });
+      }
+      catch (error) {
+        results.push({
+          firestoreId: event.id,
+          status: 'failed',
+          error: error.message
+        });
+      }
+    }
+
+    await batch.commit();
+    return {
+      success: true,
+      syncedCount: results.filter(r => r.status === 'success').length,
+      failedCount: results.filter(r => r.status === 'failed').length,
+      results
+    };
+
+  }
+  catch (error) {
+    console.error('Error in syncUnsyncedEvents:', error);
+    throw error;
+  }
+}
+
 // Get Events List
 async function listEvents(token, timeMin, timeMax) {
   const calendar = await getCalendarClient(token);
@@ -122,5 +209,6 @@ module.exports = {
   addTasksToFirestore,
   getEventsByDateRangeFirestore,
   updateEventDocFirestore,
-  deleteEventFromFirestore
+  deleteEventFromFirestore,
+  syncEvent
 };

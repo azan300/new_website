@@ -5,11 +5,13 @@ const {validateIdentifier} = require("../middleware/token");
 
 router.post('/event',validateIdentifier, calendarController.addEvent);
 
-router.get('/events', calendarController.getEvents);
+router.get('/events',validateIdentifier, calendarController.getEvents);
 
-router.put('/events/:id', calendarController.updateTask);
+router.put('/events/:id',validateIdentifier, calendarController.updateTask);
 
-router.delete('/events/:id', calendarController.deleteTask);
+router.delete('/events/:id',validateIdentifier, calendarController.deleteTask);
+
+router.get('/events/sync', validateIdentifier, calendarController.eventSync);
 
 router.post('/firestore/events', calendarController.addTasksToFirestore);
 

@@ -19,6 +19,7 @@ import classnames from "classnames";
 import avatar1 from "../../assets/images/users/avatar-1.jpg";
 import Spinners from "../../components/Common/Spinner";
 import {get} from "../../helpers/api_helper.jsx";
+import {error} from "../../helpers/Toaster.jsx";
 
 const ChatList = ({ userChatOpen, currentRoomId }) => {
   const [menu1, setMenu1] = useState(false);
@@ -26,23 +27,27 @@ const ChatList = ({ userChatOpen, currentRoomId }) => {
   const [isLoading, setLoading] = useState(true);
   const [chatThreads, setChatThreads] = useState([]);
 
-  const currentUser = {
+  const [currentUser, setCurrentUser] = useState({
     name: "Henry Wells",
     isActive: true,
-  };
+  });
 
   useEffect(() => {
     const fetchChatThreads = async () => {
       try {
+        setLoading(true);
         let authUser = localStorage.getItem("authUser");
         if (authUser) {
           authUser = JSON.parse(authUser);
+          setCurrentUser(authUser);
           const res = await get(`/chat/spaces?id=${authUser.id}`);
           setChatThreads(res || []);
 
         }
-      } catch (error) {
-        console.error("Failed to fetch chat threads:", error);
+      } catch (e) {
+        error({
+          message: "Failed to fetch messages",
+        })
       } finally {
         setLoading(false);
       }
@@ -121,7 +126,7 @@ const ChatList = ({ userChatOpen, currentRoomId }) => {
                   <h5 className="font-size-14 mb-3">Recent</h5>
                   <ul className="list-unstyled chat-list position-relative" id="recent-list">
                     {isLoading ? (
-                      <Spinners setLoading={setLoading} />
+                      <Spinners />
                     ) : (
                       <SimpleBar style={{ height: "410px" }}>
                         {(chatThreads || []).map((chat, index) => (

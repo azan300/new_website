@@ -39,8 +39,9 @@ app.get("/auth", (req, res) => {
     "profile",
     "email",
     'https://www.googleapis.com/auth/directory.readonly',
-    "https://www.googleapis.com/auth/admin.directory.user.readonly", //add manually and add admin sdk permission
+    // "https://www.googleapis.com/auth/admin.directory.user.readonly", //add manually and add admin sdk permission
     "https://www.googleapis.com/auth/userinfo.email",
+    "https://www.googleapis.com/auth/contacts.readonly",
     "https://www.googleapis.com/auth/userinfo.profile"
   ];
   const url = oauth2Client.generateAuthUrl({

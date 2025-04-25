@@ -1,6 +1,23 @@
-import React, {useEffect, useState} from "react";
-import PropTypes from "prop-types";
-import {isEmpty} from "lodash";
+//Import Breadcrumb
+import Breadcrumbs from "/src/components/Common/Breadcrumb";
+
+import { addNewEvent as onAddNewEvent, } from "/src/store/actions";
+import BootstrapTheme                    from "@fullcalendar/bootstrap";
+import allLocales                        from '@fullcalendar/core/locales-all';
+import dayGridPlugin                     from "@fullcalendar/daygrid";
+import interactionPlugin, { Draggable }  from "@fullcalendar/interaction";
+import listPlugin                        from '@fullcalendar/list';
+
+// import "@fullcalendar/react/dist/vdom";
+import FullCalendar                   from "@fullcalendar/react";
+import { useFormik }                  from "formik";
+import { isEmpty }                    from "lodash";
+import PropTypes                      from "prop-types";
+import React, { useEffect, useState } from "react";
+
+//redux
+import { useDispatch, useSelector } from "react-redux";
+import { toast }                    from 'react-toastify';
 
 import {
   Button,
@@ -16,35 +33,16 @@ import {
   ModalBody,
   ModalHeader,
   Row,
-} from "reactstrap";
-import * as Yup from "yup";
-import {useFormik} from "formik";
-//Import Breadcrumb
-import Breadcrumbs from "/src/components/Common/Breadcrumb";
-
-import {
-  addNewEvent as onAddNewEvent,
-  deleteEvent as onDeleteEvent,
-  updateEvent as onUpdateEvent,
-} from "/src/store/actions";
-
-import DeleteModal from "./DeleteModal";
+}                         from "reactstrap";
+import { createSelector } from "reselect";
+import * as Yup           from "yup";
 
 //import Images
-import verification from "../../assets/images/verification-img.png";
+import verification            from "../../assets/images/verification-img.png";
+import { del, get, post, put } from "../../helpers/api_helper.jsx";
+import { error, success }      from '../../helpers/Toaster.jsx';
 
-//redux
-import {useDispatch, useSelector} from "react-redux";
-import {createSelector} from "reselect";
-
-// import "@fullcalendar/react/dist/vdom";
-import FullCalendar from "@fullcalendar/react";
-import dayGridPlugin from "@fullcalendar/daygrid";
-import interactionPlugin, {Draggable} from "@fullcalendar/interaction";
-import BootstrapTheme from "@fullcalendar/bootstrap";
-import listPlugin from '@fullcalendar/list';
-import allLocales from '@fullcalendar/core/locales-all';
-import {get, post} from "../../helpers/api_helper.jsx";
+import DeleteModal from "./DeleteModal";
 
 const CLIENT_ID = "602714767093-hulo8d18n3t9i9qa9fal0d4afl74iods.apps.googleusercontent.com";
 const SCOPES = "https://www.googleapis.com/auth/calendar";
@@ -66,8 +64,8 @@ const Calender = (props) => {
     initialValues: {
       title: (event && event.title) || '',
       // category: (event && event.category) || '',
-      startDate: (event && event.startDate) || '',
-      endDate: (event && event.endDate) || '',
+      startDate: (event && event.start) || '',
+      endDate: (event && event.end) || '',
     },
     validationSchema: Yup.object({
       title: Yup.string().required("Please Enter Your Event Name"),
@@ -76,22 +74,13 @@ const Calender = (props) => {
       endDate: Yup.date().required("Please Enter Your End Date"),
     }),
     onSubmit: async (values) => {
-      if (isEdit) {
-        const updateEvent = {
-          id: event.id,
-          title: values.title,
-          classNames: values.category + " text-white",
-          start: event.start,
-        };
-        // update event
-        dispatch(onUpdateEvent(updateEvent));
-        categoryValidation.resetForm();
-      } else {
+      try {
         let authUser = localStorage.getItem("authUser");
         if (authUser) {
           authUser = JSON.parse(authUser);
-          const newEvent = {
-            events: [
+
+          if (isEdit) {
+            const updateEvent =
               {
                 summary: values.title,
                 start: {
@@ -101,18 +90,45 @@ const Calender = (props) => {
                   dateTime: new Date(values.endDate).toISOString(),
                 }
               }
-            ],
-            userId: authUser.id
-          };
+            if (event.eventId) {
+              const res = await put(`/calendar/events/${ event.eventId }?id=${ authUser.id }`, updateEvent)
+            }
+            await put(`/calendar/firestore/events/${ event.id }`, updateEvent)
+            categoryValidation.resetForm();
+          }
+          else {
+            const newEvent = {
+              events: [
+                {
+                  summary: values.title,
+                  start: {
+                    dateTime: new Date(values.startDate).toISOString(),
+                  },
+                  end: {
+                    dateTime: new Date(values.endDate).toISOString(),
+                  }
+                }
+              ],
+              userId: authUser.id
+            };
 
-          const res = await post(`/calendar/event?id=${newEvent.userId}`, newEvent.events[0])
-          newEvent.events[0]["eventId"] = res.id
-          await post(`/calendar/firestore/events`, newEvent)
+            // const res = await post(`/calendar/event?id=${ newEvent.userId }`, newEvent.events[0])
+            // newEvent.events[0]["eventId"] = res.id
+            await post(`/calendar/firestore/events`, newEvent)
 
-          categoryValidation.resetForm()
+            categoryValidation.resetForm()
+          }
+          toggle();
+
+          success({ message: `Successfully ${ isEdit ? "Updated" : "Created" }` })
+          await fetchEvents();
+
         }
       }
-      toggle();
+      catch (e) {
+        console.error(e);
+        error({ message: "Unable to complete task" })
+      }
     },
   });
 
@@ -133,39 +149,44 @@ const Calender = (props) => {
   const [modalCategory, setModalCategory] = useState(false);
   const [selectedDay, setSelectedDay] = useState(0);
   const [events, setEvents] = useState([]);
+  const [selectedDate, setSelectedDate] = useState({
+    start: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
+    end: new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0)
+  });
 
   const handleDatesSet = async (arg) => {
-    const date = {
+    setSelectedDate({
       start: arg.start,
       end: arg.end
-    }
+    })
+
+
     let authUser = localStorage.getItem("authUser");
     if (authUser) {
       authUser = JSON.parse(authUser);
-      const eventTemp = await get(`/calendar/firestore/events?startTime=${date.start.toISOString()}&endTime=${date.end.toISOString()}&userId=${authUser.id}`);
+      const eventTemp = await get(`/calendar/firestore/events?startTime=${ arg.start.toISOString() }&endTime=${ arg.end.toISOString() }&userId=${ authUser.id }`);
       setEvents(eventTemp);
     }
   };
 
 
   useEffect(() => {
-    // dispatch(onGetCategories());
     (async () => {
-      let authUser = localStorage.getItem("authUser");
-      if (authUser) {
-        authUser = JSON.parse(authUser);
-        const date = new Date();
-        const firstDay = new Date(date.getFullYear(), date.getMonth(), 1);
-        const lastDay = new Date(date.getFullYear(), date.getMonth() + 1, 0);
-
-        const eventTemp = await get(`/calendar/firestore/events?startTime=${firstDay.toISOString()}&endTime=${lastDay.toISOString()}&userId=${authUser.id}`);
-        setEvents(eventTemp);
-        new Draggable(document.getElementById("external-events"), {
-          itemSelector: ".external-event",
-        });
-      }
+      await fetchEvents();
+      new Draggable(document.getElementById("external-events"), {
+        itemSelector: ".external-event",
+      });
     })()
-  }, [dispatch]);
+  }, [dispatch,]);
+
+  const fetchEvents = async () => {
+    let authUser = localStorage.getItem("authUser");
+    if (authUser) {
+      authUser = JSON.parse(authUser);
+      const eventTemp = await get(`/calendar/firestore/events?startTime=${ selectedDate.start.toISOString() }&endTime=${ selectedDate.end.toISOString() }&userId=${ authUser.id }`);
+      setEvents(eventTemp);
+    }
+  }
 
   useEffect(() => {
     if (!modalCategory && !isEmpty(event) && !!isEdit) {
@@ -176,52 +197,42 @@ const Calender = (props) => {
     }
   }, [modalCategory, event]);
 
-  const handleGoogleSync = () => {
-    if (!window.google || !window.google.accounts || !window.google.accounts.oauth2) {
-      console.error("Google Identity Services SDK not loaded.");
-      return;
-    }
-
-    const tokenClient = window.google.accounts.oauth2.initCodeClient({
-      client_id: CLIENT_ID,
-      scope: SCOPES,
-      callback: (response) => {
-        if (response.code) {
-          // Send code to your backend for token exchange
-          fetch("/api/store-refresh-token", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({ code: response.code }),
+  const handleGoogleSync = async () => {
+    try {
+      let authUser = localStorage.getItem("authUser");
+      if (authUser) {
+        authUser = JSON.parse(authUser);
+        const eventResponse = await get(`/calendar/events/sync?id=${ authUser.id }`);
+        if (eventResponse.failedCount === 0) {
+          success({
+            message: `Successfully sync event ${ eventResponse.syncedCount }`,
           })
-            .then(res => res.json())
-            .then(data => {
-              console.log("Refresh token exchange success:", data);
-              setAccessToken(data.tokens.access_token);
-              alert("Google Calendar sync is now enabled.");
-            })
-            .catch(err => {
-              console.error("Token exchange failed", err);
-            });
         }
-      },
-    });
-
-    tokenClient.requestCode();
+        else {
+          error({
+            message: `Error sync event ${ eventResponse.failedCount }`,
+          })
+        }
+      }
+    }
+    catch (e) {
+      error({
+        message: e.message,
+      })
+    }
   };
-
 
 
   /**
    * Handling the modal state
    */
   const toggle = () => {
+    categoryValidation.resetForm()
     if (modalCategory) {
       setModalCategory(false);
-      setEvent(null);
       setIsEdit(false);
-    } else {
+    }
+    else {
       setModalCategory(true);
     }
   }
@@ -249,6 +260,10 @@ const Calender = (props) => {
     const modifiedData = { ...arg, date: modifiedDate };
 
     setSelectedDay(modifiedData);
+    setEvent({
+      startDate: date.toISOString(),
+      endDate: date.toISOString(),
+    })
     toggle();
   };
 
@@ -257,15 +272,8 @@ const Calender = (props) => {
    */
   const handleEventClick = (arg) => {
     const event = arg.event;
-    setEvent({
-      id: event.id,
-      title: event.title,
-      // title_category: event.title_category,
-      start: event.start,
-      className: event.classNames,
-      category: event.classNames[0],
-      event_category: event.classNames[0],
-    });
+    let tempEvent = events.find((val) => val.id === event.id)
+    setEvent(tempEvent);
     setDeleteId(event.id)
     setIsEdit(true);
     setModalCategory(true)
@@ -275,12 +283,22 @@ const Calender = (props) => {
   /**
    * On delete event
    */
-  const handleDeleteEvent = () => {
+  const handleDeleteEvent = async () => {
     if (deleteId) {
-      dispatch(onDeleteEvent(deleteId));
+      let authUser = localStorage.getItem("authUser");
+      if (authUser) {
+        authUser = JSON.parse(authUser);
+        if (event.eventId) {
+          await del(`/calendar/events/${ event.eventId }?id=${ authUser.id }`);
+        }
+        await del(`/calendar/firestore/events/${ event.id }`);
+      }
+      success({ message: `Event deleted successfully.` });
+
+      setDeleteModal(false);
+      await fetchEvents();
     }
-    setDeleteModal(false);
-  };
+  }
 
   /**
    * On category darg event
@@ -347,22 +365,29 @@ const Calender = (props) => {
   const handleChangeLocals = (value) => {
     setIsLocal(value);
   };
+  const utcToLocalDateTime = (utcDateString) => {
+    if (!utcDateString) return "";
+    const date = new Date(utcDateString);
+    return new Date(date.getTime() - date.getTimezoneOffset() * 60000)
+      .toISOString()
+      .slice(0, 16);
+  };
 
   return (
     <React.Fragment>
       <DeleteModal
-        show={deleteModal}
-        onDeleteClick={handleDeleteEvent}
-        onCloseClick={() => setDeleteModal(false)}
+        show={ deleteModal }
+        onDeleteClick={ handleDeleteEvent }
+        onCloseClick={ () => setDeleteModal(false) }
       />
       <div className="page-content">
-        <Container fluid={true}>
-          {/* Render Breadcrumb */}
-          <Breadcrumbs title="Calendar" breadcrumbItem="Calendar" />
+        <Container fluid={ true }>
+          {/* Render Breadcrumb */ }
+          <Breadcrumbs title="Calendar" breadcrumbItem="Calendar"/>
           <Row>
             <Col className="col-12">
               <Row>
-                <Col xl={3}>
+                <Col xl={ 3 }>
                   <Card>
                     <CardBody>
                       <div className="d-flex gap-2">
@@ -370,114 +395,122 @@ const Calender = (props) => {
                           <select
                             id="locale-selector"
                             className="form-select"
-                            defaultValue={isLocal}
-                            onChange={(event) => {
+                            defaultValue={ isLocal }
+                            onChange={ (event) => {
                               const selectedValue = event.target.value;
                               const selectedLocale =
                                 allLocales.find((locale) => locale.code === selectedValue);
                               handleChangeLocals(selectedLocale);
-                            }}
+                            } }
                           >
-                            {(allLocales || []).map((localeCode, key) => (
-                              <option key={key} value={localeCode.code}>
-                                {localeCode.code}
+                            { (allLocales || []).map((localeCode, key) => (
+                              <option key={ key } value={ localeCode.code }>
+                                { localeCode.code }
                               </option>
-                            ))}
+                            )) }
                           </select>
                         </div>
                         <Button
                           color="primary"
                           className="font-16"
-                          onClick={toggle}
+                          onClick={ toggle }
                         >
-                          <i className="mdi mdi-plus-circle-outline me-1" />
+                          <i className="mdi mdi-plus-circle-outline me-1"/>
                           Create New Event
                         </Button>
                       </div>
 
                       <div id="external-events" className="mt-2">
-                        <br />
+                        <br/>
                         <p className="text-muted">
                           Drag and drop your event or click in the calendar
                         </p>
-                        {categories &&
+                        { categories &&
                           (categories || []).map((category) => (
                             <div
-                              className={`${category.type} external-event fc-event text-white`}
-                              key={"cat-" + category.id}
+                              className={ `${ category.type } external-event fc-event text-white` }
+                              key={ "cat-" + category.id }
                               draggable
-                              onDrag={event => onDrag(event, category)}
+                              onDrag={ event => onDrag(event, category) }
                             >
-                              <i className="mdi mdi-checkbox-blank-circle font-size-11 me-2" />
-                              {category.title}
+                              <i className="mdi mdi-checkbox-blank-circle font-size-11 me-2"/>
+                              { category.title }
                             </div>
-                          ))}
+                          )) }
                       </div>
 
                       <Row className="justify-content-center mt-5">
-                        <img src={verification} alt="" className="img-fluid d-block" />
+                        <img src={ verification } alt="" className="img-fluid d-block"/>
                       </Row>
                     </CardBody>
                   </Card>
                 </Col>
 
                 <Col className="col-xl-9">
-                  {/* fullcalendar control */}
+                  {/* fullcalendar control */ }
                   <Card>
                     <CardBody>
 
-                      < Button color="secondary" className="mb-3" onClick={handleGoogleSync}>
+                      < Button color="secondary" className="mb-3" onClick={ handleGoogleSync }>
                         Sync with Google Calendar
                       </Button>
 
                       <FullCalendar
-                        plugins={[
+                        plugins={ [
                           BootstrapTheme,
                           dayGridPlugin,
                           listPlugin,
                           interactionPlugin,
-                        ]}
+                        ] }
                         initialView="dayGridMonth"
-                        slotDuration={"00:15:00"}
-                        handleWindowResize={true}
+                        slotDuration={ "00:15:00" }
+                        handleWindowResize={ true }
                         themeSystem="bootstrap"
-                        locale={isLocal}
-                        viewDidMount={(arg) => {
+                        locale={ isLocal }
+                        viewDidMount={ (arg) => {
                           setCurrentView(arg.type);
-                        }}
-                        datesSet={handleDatesSet}
-                        headerToolbar={{
+                        } }
+                        datesSet={ handleDatesSet }
+                        headerToolbar={ {
                           left: "prev,next today",
                           center: "title",
                           right: "dayGridMonth,dayGridWeek,dayGridDay,listWeek",
-                        }}
-                        events={events}
-                        editable={true}
-                        droppable={true}
-                        selectable={true}
+                        } }
+                        events={ events }
+                        editable={ true }
+                        droppable={ true }
+                        selectable={ true }
 
-                        dateClick={handleDateClick}
-                        eventClick={handleEventClick}
-                        drop={onDrop}
+                        dateClick={ handleDateClick }
+                        eventClick={ handleEventClick }
+                        drop={ onDrop }
                       />
 
                     </CardBody>
                   </Card>
                   <Modal
-                    isOpen={modalCategory}
-                    className={props.className}
+                    isOpen={ modalCategory }
+                    className={ props.className }
                     centered
                   >
-                    <ModalHeader toggle={toggle}>
-                      {!!isEdit ? "Edit Event" : "Add Event"}
+                    <ModalHeader toggle={ toggle }>
+                      { !!isEdit ? "Edit Event" : "Add Event" }
                     </ModalHeader>
                     <ModalBody className="p-4">
                       <Form
-                        onSubmit={(e) => {
+                        onSubmit={ (e) => {
                           e.preventDefault();
-                          categoryValidation.handleSubmit();
+                          if (new Date(categoryValidation.values.startDate) > new Date(categoryValidation.values.endDate)) {
+                            error({
+                              message: `Start Date is greater than end`,
+                            })
+                          }
+                          else {
+                            categoryValidation.handleSubmit();
+
+                          }
                           return false;
-                        }}
+                        } }
                       >
                         <Row>
                           <Col className="col-12">
@@ -487,84 +520,88 @@ const Calender = (props) => {
                                 name="title"
                                 type="text"
                                 placeholder="Insert Event Name"
-                                onChange={categoryValidation.handleChange}
-                                onBlur={categoryValidation.handleBlur}
-                                value={categoryValidation.values.title || ""}
+                                onChange={ categoryValidation.handleChange }
+                                onBlur={ categoryValidation.handleBlur }
+                                value={ categoryValidation.values.title || "" }
                                 invalid={
                                   categoryValidation.touched.title && categoryValidation.errors.title ? true : false
                                 }
                               />
-                              {categoryValidation.touched.title && categoryValidation.errors.title ? (
-                                <FormFeedback type="invalid">{categoryValidation.errors.title}</FormFeedback>
-                              ) : null}
+                              { categoryValidation.touched.title && categoryValidation.errors.title ? (
+                                <FormFeedback type="invalid">{ categoryValidation.errors.title }</FormFeedback>
+                              ) : null }
                             </div>
                           </Col>
-                          {/*<Col className="col-12">*/}
-                          {/*  <div className="mb-3">*/}
-                          {/*    <Label>Category</Label>*/}
-                          {/*    <Input*/}
-                          {/*      type="select"*/}
-                          {/*      name="category"*/}
-                          {/*      placeholder="All Day Event"*/}
-                          {/*      onChange={categoryValidation.handleChange}*/}
-                          {/*      onBlur={categoryValidation.handleBlur}*/}
-                          {/*      value={categoryValidation.values.category || ""}*/}
-                          {/*      invalid={*/}
-                          {/*        categoryValidation.touched.category && categoryValidation.errors.category ? true : false*/}
-                          {/*      }*/}
-                          {/*    >*/}
-                          {/*      <option value="bg-danger">Danger</option>*/}
-                          {/*      <option value="bg-success">Success</option>*/}
-                          {/*      <option value="bg-primary">Primary</option>*/}
-                          {/*      <option value="bg-info">Info</option>*/}
-                          {/*      <option value="bg-dark">Dark</option>*/}
-                          {/*      <option value="bg-warning">Warning</option>*/}
-                          {/*    </Input>*/}
-                          {/*    {categoryValidation.touched.category && categoryValidation.errors.category ? (*/}
-                          {/*      <FormFeedback type="invalid">{categoryValidation.errors.category}</FormFeedback>*/}
-                          {/*    ) : null}*/}
-                          {/*  </div>*/}
-                          {/*</Col>*/}
-                          <Col className={"col-12 mb-3"}>
+                          {/*<Col className="col-12">*/ }
+                          {/*  <div className="mb-3">*/ }
+                          {/*    <Label>Category</Label>*/ }
+                          {/*    <Input*/ }
+                          {/*      type="select"*/ }
+                          {/*      name="category"*/ }
+                          {/*      placeholder="All Day Event"*/ }
+                          {/*      onChange={categoryValidation.handleChange}*/ }
+                          {/*      onBlur={categoryValidation.handleBlur}*/ }
+                          {/*      value={categoryValidation.values.category || ""}*/ }
+                          {/*      invalid={*/ }
+                          {/*        categoryValidation.touched.category && categoryValidation.errors.category ? true : false*/ }
+                          {/*      }*/ }
+                          {/*    >*/ }
+                          {/*      <option value="bg-danger">Danger</option>*/ }
+                          {/*      <option value="bg-success">Success</option>*/ }
+                          {/*      <option value="bg-primary">Primary</option>*/ }
+                          {/*      <option value="bg-info">Info</option>*/ }
+                          {/*      <option value="bg-dark">Dark</option>*/ }
+                          {/*      <option value="bg-warning">Warning</option>*/ }
+                          {/*    </Input>*/ }
+                          {/*    {categoryValidation.touched.category && categoryValidation.errors.category ? (*/ }
+                          {/*      <FormFeedback type="invalid">{categoryValidation.errors.category}</FormFeedback>*/ }
+                          {/*    ) : null}*/ }
+                          {/*  </div>*/ }
+                          {/*</Col>*/ }
+                          <Col className={ "col-12 mb-3" }>
                             <Label>Start Date</Label>
                             <Input
-                              name={"startDate"}
+                              name={ "startDate" }
                               aria-label="Date and time"
                               type="datetime-local"
-                              onChange={categoryValidation.handleChange}
-                              onBlur={categoryValidation.handleBlur}
-                              value={categoryValidation.values.startDate || ""}
+                              onChange={ categoryValidation.handleChange }
+                              onBlur={ categoryValidation.handleBlur }
+                              value={ utcToLocalDateTime(categoryValidation.values.startDate) || "" }
                               invalid={
                                 categoryValidation.touched.startDate && categoryValidation.errors.startDate ? true : false
                               }
                             />
-                            {categoryValidation.touched.startDate && categoryValidation.errors.startDate ? (
-                              <FormFeedback type="invalid">{categoryValidation.errors.startDate}</FormFeedback>
-                            ) : null}
+                            { categoryValidation.touched.startDate && categoryValidation.errors.startDate ? (
+                              <FormFeedback type="invalid">{ categoryValidation.errors.startDate }</FormFeedback>
+                            ) : null }
                           </Col>
-                          <Col className={"col-12 mb-3"}>
+                          <Col className={ "col-12 mb-3" }>
                             <Label>End Date</Label>
                             <Input
-                              name={"endDate"}
+                              name={ "endDate" }
                               aria-label="Date and time"
                               type="datetime-local"
-                              onChange={categoryValidation.handleChange}
-                              onBlur={categoryValidation.handleBlur}
-                              value={categoryValidation.values.endDate || ""}
+                              onChange={ categoryValidation.handleChange }
+                              onBlur={ categoryValidation.handleBlur }
+                              value={ utcToLocalDateTime(categoryValidation.values.endDate) || "" }
                               invalid={
                                 categoryValidation.touched.endDate && categoryValidation.errors.endDate ? true : false
                               }
                             />
-                            {categoryValidation.touched.endDate && categoryValidation.errors.endDate ? (
-                              <FormFeedback type="invalid">{categoryValidation.errors.endDate}</FormFeedback>
-                            ) : null}
+                            { categoryValidation.touched.endDate && categoryValidation.errors.endDate ? (
+                              <FormFeedback type="invalid">{ categoryValidation.errors.endDate }</FormFeedback>
+                            ) : null }
                           </Col>
                         </Row>
 
                         <Row className="mt-2">
                           <Col className="col-6">
-                            {isEdit &&
-                              <button type="button" className="btn btn-danger" id="btn-delete-event" onClick={() => { toggle(); setDeleteModal(true) }}>Delete</button>
+                            { isEdit &&
+                              <button type="button" className="btn btn-danger" id="btn-delete-event"
+                                      onClick={ () => {
+                                        toggle();
+                                        setDeleteModal(true)
+                                      } }>Delete</button>
                             }
                           </Col>
 
@@ -572,7 +609,7 @@ const Calender = (props) => {
                             <button
                               type="button"
                               className="btn btn-light me-1"
-                              onClick={toggle}
+                              onClick={ toggle }
                             >
                               Close
                             </button>
@@ -596,6 +633,7 @@ const Calender = (props) => {
       </div>
     </React.Fragment>
   );
+
 };
 
 Calender.propTypes = {

@@ -6,7 +6,8 @@ const {
   addTasksToFirestore,
   getEventsByDateRangeFirestore,
   updateEventDocFirestore,
-  deleteEventFromFirestore
+  deleteEventFromFirestore,
+  syncEvent
 } = require("../services/calendarService");
 const events = require('node:events');
 
@@ -24,6 +25,17 @@ exports.getEvents = async (req, res) => {
   catch (e) {
     console.log(e)
     res.status(500).json({ success: false, error: { message: "Failed to fetch events", reason: e.message } });
+  }
+}
+
+exports.eventSync = async (req, res) => {
+  try {
+    const event = await syncEvent(req.token);
+    res.json(event);
+  }
+  catch (e) {
+    console.log(e)
+    res.status(500).json({ success: false, error: { message: "Failed to add event", reason: e.message } });
   }
 }
 

@@ -53,9 +53,13 @@ async function listMessages(token, spaceId) {
       const senderIdRaw = msg.sender?.name || '';
       const senderId = senderIdRaw.split('/')[1];
 
-      const userInfo = senderId
-        ? await getUserInfo(senderId)
-        : { fullName: 'Unknown', email: '', photo: '' };
+      if(senderId === token?.id){
+        console.log('&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&')
+      }
+
+      const userInfo = senderId === token?.id
+        ? token?.name || senderIdRaw
+        : await getUserInfo(senderId);
 
       return {
         ...msg,

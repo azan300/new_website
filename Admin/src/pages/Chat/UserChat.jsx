@@ -3,6 +3,7 @@ import {Button, Card, Col, Input, Row} from "reactstrap";
 import SimpleBar from "simplebar-react";
 import Spinners from "../../components/Common/Spinner";
 import {get, post} from "../../helpers/api_helper.jsx";
+import {error} from "../../helpers/Toaster.jsx";
 
 const UserChat = ({ Chat_Box_Username, Chat_Box_User_Status }) => {
   const scrollRef = useRef(null);
@@ -12,12 +13,19 @@ const UserChat = ({ Chat_Box_Username, Chat_Box_User_Status }) => {
   const [curMessage, setCurMessage] = useState("");
   const [isDisable, setDisable] = useState(false);
 
+  const messagesEndRef = useRef(null);
+
+
   // Fetch messages from Google Chat API
   useEffect(() => {
-
-
     fetchGoogleChatMessages();
   }, [Chat_Box_Username]);
+
+  useEffect(() => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [messages]);
 
   const fetchGoogleChatMessages = async () => {
     try {
@@ -28,8 +36,10 @@ const UserChat = ({ Chat_Box_Username, Chat_Box_User_Status }) => {
         const res = await get(`/chat/messages?spaceId=${Chat_Box_Username}&id=${authUser.id}`);
         setMessages(res || []);
       }
-    } catch (err) {
-      console.error("Failed to load Google Chat messages:", err);
+    } catch (e) {
+      error({
+        message: "Failed to fetch messages",
+      })
     } finally {
       setLoading(false);
     }
@@ -55,6 +65,9 @@ const UserChat = ({ Chat_Box_Username, Chat_Box_User_Status }) => {
       }
     } catch (err) {
       console.error("Error sending message:", err);
+      error({
+        message: "Error sending message",
+      })
     }
   };
 
@@ -82,10 +95,10 @@ const UserChat = ({ Chat_Box_Username, Chat_Box_User_Status }) => {
 
         <div className="chat-conversation p-3">
           <SimpleBar ref={scrollRef} style={{ height: "470px" }}>
-            {loading ? (
-              <Spinners setLoading={setLoading} />
-            ) : (
-              <ul className="list-unstyled" id="users-conversation">
+            {loading ? (<Spinners/>
+            ) : (<ul style={{
+                display: "flex", flexDirection: "column",
+              }} className="list-unstyled" id="users-conversation">
                 {messages.map((msg, idx) => {
                   let authUser = localStorage.getItem("authUser");
                   if (authUser) {
@@ -94,7 +107,7 @@ const UserChat = ({ Chat_Box_Username, Chat_Box_User_Status }) => {
                   return <li key={idx} className={msg.sender.name === `users/${authUser.id}` ? "right" : ""}>
                     <div className="conversation-list">
                       <div className="ctext-wrap">
-                        <div className="conversation-name">{msg.sender.name}</div>
+                        <div className="conversation-name">{msg?.senderName || msg?.sender?.name}</div>
                         {msg.attachment ? <div style={{
                           display: "flex",
                           flexDirection: "column",
@@ -109,6 +122,8 @@ const UserChat = ({ Chat_Box_Username, Chat_Box_User_Status }) => {
                 })}
               </ul>
             )}
+            <div ref={messagesEndRef} />
+
           </SimpleBar>
         </div>
 
